@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CrypterHelper - Login</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    h1 {
+      margin: 0;
+    }
+
+    .login-container {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    .login-container h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #004466;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #004466;
+    }
+
+    .signup-link {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .signup-link a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+
+    .signup-link a:hover {
+      text-decoration: underline;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>CrypterHelper</h1>
+  </header>
+
+  <!--login container with login form-->
+  <div class="login-container">
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+      <div class="signup-link">
+        Don't have an account? <a href="#" id="signup-link">Click here to sign up</a>
+      </div>
+      <div class="error" id="error-msg"></div>
+    </form>
+  </div>
+
+  <footer>
+    &copy; 2025 CrypterHelper. All rights reserved.
+  </footer>
+
+  <!--Lets HTML communicate with Electron process-->
+  <!--Get login form element to listen when submitted-->
+  <!--Grabs and sends values to main.js-->
+  <!--Get login result from main process, successful or error-->
+  <!--Open sign-up page in default browser-->
+  <script>
+    const { ipcRenderer, shell } = require('electron');
+  
+    const form = document.getElementById('login-form');
+    const errorDiv = document.getElementById('error-msg');
+    const signupLink = document.getElementById('signup-link');
+  
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+  
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+  
+      ipcRenderer.send('login-attempt', { username, password });
+    });
+  
+    ipcRenderer.on('login-response', (event, response) => {
+      if (response.success) {
+        alert("Login successful! Welcome, " + response.user);
+      } else {
+        errorDiv.textContent = response.error;
+      }
+    });
+  
+    signupLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      shell.openExternal('http://localhost/crypterhelper/pages/authentication/sign_up.php');
+    });
+  </script>
+
+</body>
+</html>
