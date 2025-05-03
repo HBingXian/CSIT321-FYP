@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard - CrypterHelper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">CrypterHelper</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>      
+
+  <main>
+    <h2>Welcome to the Dashboard</h2>
+    <p>What do you want to do today?</p>
+    <br>
+    <button id="generateKeyBtn">Generate Encryption Key</button>
+    <br><br>
+    <button id="recoverKeyBtn">Recover Encryption Key</button>
+  </main>
+
+  <footer>© 2025 CrypterHelper</footer>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    // Logout functionality
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        // Trigger logout by telling the main process to load the login page
+        ipcRenderer.send('logout-request');
+    });
+
+    // Navigate to gen_key.html 
+    document.getElementById('generateKeyBtn').addEventListener('click', () => {
+        ipcRenderer.send('navigate-to-gen-key'); // Send the event to the main process to load gen_key.html
+    });
+
+    // Navigate to rec_key.html 
+    document.getElementById('recoverKeyBtn').addEventListener('click', () => {
+        ipcRenderer.send('navigate-to-rec-key'); // Send the event to the main process to load gen_key.html
+    });
+  </script>
+</body>
+</html>

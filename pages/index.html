@@ -95,34 +95,41 @@
   <!--Get login form element to listen when submitted-->
   <!--Grabs and sends values to main.js-->
   <!--Get login result from main process, successful or error-->
-  <!--Open sign-up page in default browser-->
   <script>
     const { ipcRenderer, shell } = require('electron');
   
-    const form = document.getElementById('login-form');
-    const errorDiv = document.getElementById('error-msg');
-    const signupLink = document.getElementById('signup-link');
+    // Ensure all elements are loaded before we attach event listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('login-form');
+      const errorDiv = document.getElementById('error-msg');
+      const signupLink = document.getElementById('signup-link');
   
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
+      // Listen for form submission and send login attempt to main process
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
   
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
   
-      ipcRenderer.send('login-attempt', { username, password });
-    });
+        ipcRenderer.send('login-attempt', { username, password });
+      });
   
-    ipcRenderer.on('login-response', (event, response) => {
-      if (response.success) {
-        alert("Login successful! Welcome, " + response.user);
-      } else {
-        errorDiv.textContent = response.error;
-      }
-    });
+      // Listen for login response from main process
+      ipcRenderer.on('login-response', (event, response) => {
+        if (response.success) {
+          // Redirect to the dashboard or handle successful login
+          window.location.href = 'dashboard.html'; // or you could use ipcRenderer to load it
+        } else {
+          // Show the error message in the error div
+          errorDiv.textContent = response.error;
+        }
+      });
   
-    signupLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      shell.openExternal('http://localhost/crypterhelper/pages/authentication/sign_up.php');
+      // Handle signup link click
+      signupLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        shell.openExternal('http://localhost/crypterhelper/pages/authentication/sign_up.php');
+      });
     });
   </script>
 
