@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Recover Encryption Key - CrypterHelper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">CrypterHelper</div>
+    <button class="home-btm" id="homeBtn">Back to Dashboard</button>
+  </div>
+  <main>
+    <h2>Recover Encryption Key</h2>
+    <form id="recForm">
+        
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+
+    <label for="password">Password:</label>
+    <input type="text" id="password" name="password" required>
+
+    <label for="passphrase">Passphrase:</label>
+    <input type="text" id="passphrase" name="passphrase" required>
+
+    <br><br>
+    <button type="submit">Recover Key</button>
+    </form>
+    <div id="result"></div>
+  </main>
+  <footer>© 2025 CrypterHelper</footer>
+
+  <script src="../js/rec_key.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const { ipcRenderer } = require('electron');
+      document.getElementById('homeBtn').addEventListener('click', () => {
+        ipcRenderer.send('home-request');
+      });
+    });
+  </script>
+</body>
+</html>

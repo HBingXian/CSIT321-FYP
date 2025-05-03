@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Key - CrypterHelper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">CrypterHelper</div>
+        <button class="home-btm" id="homeBtn">Back to Dashboard</button>
+    </div>
+  <main>
+    <h2>Generate Encryption Key</h2>
+    <form id="keyForm">
+      <label for="passphrase">Enter Passphrase:</label>
+      <input type="text" id="passphrase" name="passphrase" placeholder="Enter the passphrase here" required>
+      <p><b>Please use a passphrase that is atleast 12 characters long with a mix of uppercase, lowercase letters, symbols and numbers.</b></p>
+      <br>
+      <p><b>Refer to the Educational Materials on our website for more information on creating passwords.</b></p>
+      <br>
+      <button type="submit">Generate Key</button>
+    </form>
+    <div id="result"></div>
+  </main>  
+  <footer>© 2025 CrypterHelper</footer>
+
+  <!--js for page-->
+  <script src="../js/gen_key.js"></script>
+  <script src="main.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const { ipcRenderer } = require('electron');
+      document.getElementById('homeBtn').addEventListener('click', () => {
+        ipcRenderer.send('home-request');
+      });
+    });
+  </script>
+</body>
+</html>
