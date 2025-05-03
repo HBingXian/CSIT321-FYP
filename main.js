@@ -47,6 +47,14 @@ db.connect((err) => {
   console.log('Connected to MySQL');
 });
 
+// Log action to activity_logs table
+function logAction(username, action, description) {
+  const sql = 'INSERT INTO activity_logs (username, action_type, description) VALUES (?, ?, ?)';
+  db.query(sql, [username, action, description], (err) => {
+    if (err) console.error('Failed to log action:', err);
+  });
+}
+
 // Handle login
 ipcMain.on('login-attempt', (event, { username, password }) => {
   const sql = 'SELECT * FROM users WHERE username = ?';
@@ -165,6 +173,9 @@ ipcMain.on('generate-key', (event, passphrase) => {
             message: 'Encryption key generated successfully. Please backup your key!',
             encryptionKey
           });
+          
+          // Logging for key generation
+          logAction(currentUser, 'key_generation', 'Encryption key was generated successfully.');
         });
       });
     });
@@ -214,6 +225,10 @@ ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
           }
 
           const encryptionKey = derivedKey.toString('base64');
+          
+          // Logging for key recovery
+          logAction(username, 'key_recovery', 'Encryption key was recovered successfully.');
+          
           event.reply('recover-status', {
             success: true,
             message: 'Encryption key recovered successfully',
