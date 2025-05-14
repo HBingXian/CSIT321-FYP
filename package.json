@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/HBingXian/CSIT321-FYP#readme",
   "devDependencies": {
-    "electron": "^36.0.0"
+    "electron": "^36.2.0"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
