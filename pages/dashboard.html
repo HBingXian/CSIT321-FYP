@@ -17,28 +17,15 @@
     <button id="generateKeyBtn">Generate Encryption Key</button>
     <br><br>
     <button id="recoverKeyBtn">Recover Encryption Key</button>
+    <br><br>
+    <button id="encryptUploadBtn">Encrypt & Upload File</button>
+    <button id="downloadDecryptBtn">Download & Decrypt File</button>
   </main>
 
+  <div id="result">document.getElementById('result').innerHTML = "File Encrypted: " + outputPath;</div>
+
+  <script src="../js/dashboard_actions.js"></script>
+
   <footer>© 2025 CrypterHelper</footer>
-
-  <script>
-    const { ipcRenderer } = require('electron');
-
-    // Logout functionality
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        // Trigger logout by telling the main process to load the login page
-        ipcRenderer.send('logout-request');
-    });
-
-    // Navigate to gen_key.html 
-    document.getElementById('generateKeyBtn').addEventListener('click', () => {
-        ipcRenderer.send('navigate-to-gen-key'); // Send the event to the main process to load gen_key.html
-    });
-
-    // Navigate to rec_key.html 
-    document.getElementById('recoverKeyBtn').addEventListener('click', () => {
-        ipcRenderer.send('navigate-to-rec-key'); // Send the event to the main process to load gen_key.html
-    });
-  </script>
 </body>
 </html>

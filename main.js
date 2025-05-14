@@ -3,9 +3,14 @@ const path = require('path');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto'); // ✅ Added crypto module
+const { dialog } = require('electron');
+const { encryptFile } = require('./js/file_encrypt');
+const { decryptFile } = require('./js/file_decrypt');
 
 let mainWindow;
 let currentUser = null; // ✅ Track the currently logged-in user
+let currentEncryptionKey = null;//same 
+
 
 // Create main application window
 function createWindow() {
@@ -125,6 +130,67 @@ ipcMain.on('home-request', () => {
   }
 });
 
+// Handle Encrypt & Upload request
+ipcMain.on('request-encrypt-upload', async () => {
+    if (!currentUser) {
+        console.log('User not logged in');
+        return;
+    }
+
+    if (!currentEncryptionKey) {
+        console.log('Encryption key not ready. Generate or recover your key first.');
+        return;
+    }
+
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return;
+
+    const inputPath = filePaths[0];
+    const outputPath = inputPath + '_encrypted.dat';
+
+    // You need to have the encryptionKey available (ensure it's stored after key generation or recovery)
+    // Example assuming you store the key globally as currentEncryptionKey:
+    encryptFile(inputPath, outputPath, currentEncryptionKey);
+
+    // TODO: Add upload to cloud step here if needed
+});
+//SuperBad123*
+//tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
+
+// Handle Download & Decrypt request
+// Handle Download & Decrypt request
+ipcMain.on('request-download-decrypt', async () => {
+    if (!currentUser) {
+        console.log('User not logged in');
+        return;
+    }
+
+    if (!currentEncryptionKey) {
+        console.log('Encryption key not ready. Generate or recover your key first.');
+        return;
+    }
+
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return;
+
+    const encryptedPath = filePaths[0];
+
+    // Show Save As dialog
+    const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog({
+        title: 'Save Decrypted File As',
+        defaultPath: encryptedPath.replace('_encrypted.dat', '_decrypted.txt'),
+        buttonLabel: 'Save Decrypted File'
+    });
+
+    if (saveCanceled || !savePath) return;
+
+    decryptFile(encryptedPath, savePath, currentEncryptionKey);
+
+    console.log('Decrypted file saved to:', savePath);
+});
+
+
+
 // Handle key generation
 ipcMain.on('generate-key', (event, passphrase) => {
   if (!currentUser) {
@@ -169,6 +235,7 @@ ipcMain.on('generate-key', (event, passphrase) => {
           }
 
           const encryptionKey = derivedKey.toString('base64'); // Store encryption key
+          currentEncryptionKey = encryptionKey;  // ✔ Store globally for later use
           event.reply('key-status', {
             message: 'Encryption key generated successfully. Please backup your key!',
             encryptionKey
@@ -225,7 +292,7 @@ ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
           }
 
           const encryptionKey = derivedKey.toString('base64');
-          
+          currentEncryptionKey = encryptionKey;  // ✔ Store globally for later use
           // Logging for key recovery
           logAction(username, 'key_recovery', 'Encryption key was recovered successfully.');
           
