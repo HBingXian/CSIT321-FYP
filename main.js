@@ -3,9 +3,15 @@ const path = require('path');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto'); // ✅ Added crypto module
+const { dialog } = require('electron');
+const { encryptFile } = require('./js/file_encrypt');
+const { decryptFile } = require('./js/file_decrypt');
+const { uploadToDrive } = require('./js/drive_upload');
 
 let mainWindow;
 let currentUser = null; // ✅ Track the currently logged-in user
+let currentEncryptionKey = null;//same 
+
 
 // Create main application window
 function createWindow() {
@@ -116,6 +122,14 @@ ipcMain.on('navigate-to-rec-key', () => {
   }
 });
 
+//navigate to encrypt page
+ipcMain.on('navigate-to-encrypt-page', () => {
+  if (mainWindow) {
+    mainWindow.loadFile('pages/encrypt.html');
+  }
+});
+
+
 // Back to dashboard
 ipcMain.on('home-request', () => {
   if (mainWindow) {
@@ -124,6 +138,73 @@ ipcMain.on('home-request', () => {
     });
   }
 });
+
+//navigate to decrypt page
+ipcMain.on('navigate-to-decrypt-page', () => {
+  if (mainWindow) {
+    mainWindow.loadFile('pages/decrypt.html');
+  }
+});
+
+// Handle Encrypt & Upload request
+ipcMain.on('request-encrypt-upload', async () => {
+    if (!currentUser) {
+        console.log('User not logged in');
+        return;
+    }
+
+    if (!currentEncryptionKey) {
+        console.log('Encryption key not ready. Generate or recover your key first.');
+        return;
+    }
+
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return;
+
+    const inputPath = filePaths[0];
+    const outputPath = inputPath + '_encrypted.dat';
+
+    // You need to have the encryptionKey available (ensure it's stored after key generation or recovery)
+    // Example assuming you store the key globally as currentEncryptionKey:
+    encryptFile(inputPath, outputPath, currentEncryptionKey);
+
+    // TODO: Add upload to cloud step here if needed
+});
+//SuperBad123*
+//tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
+
+// Handle Download & Decrypt request
+ipcMain.on('request-download-decrypt', async () => {
+    if (!currentUser) {
+        console.log('User not logged in');
+        return;
+    }
+
+    if (!currentEncryptionKey) {
+        console.log('Encryption key not ready. Generate or recover your key first.');
+        return;
+    }
+
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return;
+
+    const encryptedPath = filePaths[0];
+
+    // Show Save As dialog
+    const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog({
+        title: 'Save Decrypted File As',
+        defaultPath: encryptedPath.replace('_encrypted.dat', '_decrypted.txt'),
+        buttonLabel: 'Save Decrypted File'
+    });
+
+    if (saveCanceled || !savePath) return;
+
+    decryptFile(encryptedPath, savePath, currentEncryptionKey);
+
+    console.log('Decrypted file saved to:', savePath);
+});
+
+
 
 // Handle key generation
 ipcMain.on('generate-key', (event, passphrase) => {
@@ -169,6 +250,7 @@ ipcMain.on('generate-key', (event, passphrase) => {
           }
 
           const encryptionKey = derivedKey.toString('base64'); // Store encryption key
+          currentEncryptionKey = encryptionKey;  // ✔ Store globally for later use
           event.reply('key-status', {
             message: 'Encryption key generated successfully. Please backup your key!',
             encryptionKey
@@ -225,7 +307,7 @@ ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
           }
 
           const encryptionKey = derivedKey.toString('base64');
-          
+          currentEncryptionKey = encryptionKey;  // ✔ Store globally for later use
           // Logging for key recovery
           logAction(username, 'key_recovery', 'Encryption key was recovered successfully.');
           
@@ -238,6 +320,53 @@ ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
       });
     });
   });
+});
+
+//Superbad123!
+//eMIAjg1Yx1Ub9ve4HisjKPlKjKNqQlmwnIBsLFxobPw=
+//handler to encrypt with manual key input
+ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (canceled || filePaths.length === 0) return;
+
+  const inputPath = filePaths[0];
+  const outputPath = inputPath + '_encrypted.dat';
+
+  try {
+    encryptFile(inputPath, outputPath, encryptionKey);
+    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
+
+    // Upload to Google Drive after encryption
+    console.log("Uploading to Google Drive:", outputPath); // for testing
+    uploadToDrive(outputPath);
+  } catch (err) {
+    console.error('Encryption or upload error:', err);
+    event.sender.send('encryption-done', 'Encryption failed.');
+  }
+});
+
+
+ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return;
+
+    const encryptedPath = filePaths[0];
+
+    // Show save location dialog
+    const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog({
+        title: 'Save Decrypted File As',
+        defaultPath: encryptedPath.replace('_encrypted.dat', '_decrypted.txt'),
+        buttonLabel: 'Save Decrypted File'
+    });
+
+    if (saveCanceled || !savePath) return;
+
+    try {
+        decryptFile(encryptedPath, savePath, encryptionKey);
+        event.sender.send('decryption-done', ` File decrypted and saved to: ${savePath}`);
+    } catch (err) {
+        event.sender.send('decryption-done', ` Decryption failed: ${err.message}`);
+    }
 });
 
   // Close app
