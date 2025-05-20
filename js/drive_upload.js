@@ -44,36 +44,66 @@ function authorize(callback) {
   }
 }
 
-function uploadFile(auth, filePath) {
+async function ensureAppFolderExists(drive) {
+  const res = await drive.files.list({
+    q: "name = 'CrypterHelperUploads' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+    fields: 'files(id)',
+    spaces: 'drive',
+  });
+
+  if (res.data.files.length > 0) {
+    return res.data.files[0].id;
+  }
+
+  // Folder doesn't exist, create it
+  const folderMetadata = {
+    name: 'CrypterHelperUploads',
+    mimeType: 'application/vnd.google-apps.folder',
+  };
+
+  const folder = await drive.files.create({
+    resource: folderMetadata,
+    fields: 'id',
+  });
+
+  return folder.data.id;
+}
+
+
+async function uploadFile(auth, filePath) {
   const drive = google.drive({ version: 'v3', auth });
+  const folderId = await ensureAppFolderExists(drive); // Ensure folder
+
   const fileMetadata = {
     name: path.basename(filePath),
+    parents: [folderId], // Assign file to folder
   };
+
   const media = {
     mimeType: 'application/octet-stream',
     body: fs.createReadStream(filePath),
   };
 
-  drive.files.create(
-    {
+  try {
+    const file = await drive.files.create({
       resource: fileMetadata,
       media: media,
       fields: 'id',
-    },
-    (err, file) => {
-      if (err) {
-        console.error('Upload error:', err);
-      } else {
-        console.log(`File uploaded. File ID: ${file.data.id}`);
-      }
-    }
-  );
+    });
+
+    console.log(`File uploaded to CrypterHelperUploads. File ID: ${file.data.id}`);
+  } catch (err) {
+    console.error('Upload error:', err);
+  }
 }
+
 
 // Public function to use from main.js
 function uploadToDrive(filePath) {
     console.log("uploadToDrive() called with:", filePath);  // Add this
-  authorize((auth) => uploadFile(auth, filePath));
+  authorize(async (auth) => {
+  await uploadFile(auth, filePath);
+});
 }
 
 module.exports = { uploadToDrive };
