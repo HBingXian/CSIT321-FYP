@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Decrypt File</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">CrypterHelper</div>
+    <button class="home-btm" id="homeBtn">Back to Dashboard</button>
+  </div>
+
+  <main>
+    <h2>Decrypt a File</h2>
+
+    <label for="decryptionKeyInput">Enter your Encryption Key:</label><br>
+    <input type="text" id="decryptionKeyInput" placeholder="Base64 key..." size="60"><br><br>
+
+    <button id="selectFileBtn">Select File to Decrypt</button>
+
+    <div id="result"></div>
+  </main>
+
+  <script src="../js/decrypt_page.js"></script>
+</body>
+</html>
