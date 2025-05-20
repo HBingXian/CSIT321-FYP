@@ -1,4 +1,4 @@
-// FYP/js/file_encrypt.js
+
 const fs = require('fs');
 const crypto = require('crypto');
 

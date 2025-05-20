@@ -6,6 +6,7 @@ const crypto = require('crypto'); // ✅ Added crypto module
 const { dialog } = require('electron');
 const { encryptFile } = require('./js/file_encrypt');
 const { decryptFile } = require('./js/file_decrypt');
+const { uploadToDrive } = require('./js/drive_upload');
 
 let mainWindow;
 let currentUser = null; // ✅ Track the currently logged-in user
@@ -121,12 +122,27 @@ ipcMain.on('navigate-to-rec-key', () => {
   }
 });
 
+//navigate to encrypt page
+ipcMain.on('navigate-to-encrypt-page', () => {
+  if (mainWindow) {
+    mainWindow.loadFile('pages/encrypt.html');
+  }
+});
+
+
 // Back to dashboard
 ipcMain.on('home-request', () => {
   if (mainWindow) {
     mainWindow.loadFile('pages/dashboard.html').then(() => {
       mainWindow.focus();
     });
+  }
+});
+
+//navigate to decrypt page
+ipcMain.on('navigate-to-decrypt-page', () => {
+  if (mainWindow) {
+    mainWindow.loadFile('pages/decrypt.html');
   }
 });
 
@@ -157,7 +173,6 @@ ipcMain.on('request-encrypt-upload', async () => {
 //SuperBad123*
 //tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
 
-// Handle Download & Decrypt request
 // Handle Download & Decrypt request
 ipcMain.on('request-download-decrypt', async () => {
     if (!currentUser) {
@@ -305,6 +320,53 @@ ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
       });
     });
   });
+});
+
+//Superbad123!
+//eMIAjg1Yx1Ub9ve4HisjKPlKjKNqQlmwnIBsLFxobPw=
+//handler to encrypt with manual key input
+ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (canceled || filePaths.length === 0) return;
+
+  const inputPath = filePaths[0];
+  const outputPath = inputPath + '_encrypted.dat';
+
+  try {
+    encryptFile(inputPath, outputPath, encryptionKey);
+    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
+
+    // Upload to Google Drive after encryption
+    console.log("Uploading to Google Drive:", outputPath); // for testing
+    uploadToDrive(outputPath);
+  } catch (err) {
+    console.error('Encryption or upload error:', err);
+    event.sender.send('encryption-done', 'Encryption failed.');
+  }
+});
+
+
+ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return;
+
+    const encryptedPath = filePaths[0];
+
+    // Show save location dialog
+    const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog({
+        title: 'Save Decrypted File As',
+        defaultPath: encryptedPath.replace('_encrypted.dat', '_decrypted.txt'),
+        buttonLabel: 'Save Decrypted File'
+    });
+
+    if (saveCanceled || !savePath) return;
+
+    try {
+        decryptFile(encryptedPath, savePath, encryptionKey);
+        event.sender.send('decryption-done', ` File decrypted and saved to: ${savePath}`);
+    } catch (err) {
+        event.sender.send('decryption-done', ` Decryption failed: ${err.message}`);
+    }
 });
 
   // Close app

@@ -24,3 +24,19 @@ document.getElementById('encryptUploadBtn').addEventListener('click', () => {
 document.getElementById('downloadDecryptBtn').addEventListener('click', () => {
     ipcRenderer.send('request-download-decrypt');
 });
+
+
+document.getElementById('encryptUploadBtn').addEventListener('click', () => {
+    ipcRenderer.send('navigate-to-encrypt-page');
+});
+
+//navigate to encryption page
+document.getElementById('goToEncryptPageBtn').addEventListener('click', () => {
+    ipcRenderer.send('navigate-to-encrypt-page');
+});
+
+//navigate to decryption page
+document.getElementById('goToDecryptPageBtn').addEventListener('click', () => {
+    ipcRenderer.send('navigate-to-decrypt-page');
+});
+
