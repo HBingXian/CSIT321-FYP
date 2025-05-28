@@ -5,3 +5,4 @@ node_modules/
 credentials.json
 client_secret_*.json
 js/token.json
+token.json
