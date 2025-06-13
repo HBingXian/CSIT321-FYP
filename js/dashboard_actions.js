@@ -40,3 +40,10 @@ document.getElementById('goToDecryptPageBtn').addEventListener('click', () => {
     ipcRenderer.send('navigate-to-decrypt-page');
 });
 
+//navigate to files.html page
+document.getElementById('manageFilesBtn').addEventListener('click', () => {
+  ipcRenderer.send('navigate-to-files');  // custom IPC event
+});
+
+
+

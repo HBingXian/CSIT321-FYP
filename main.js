@@ -8,6 +8,9 @@ const { encryptFile } = require('./js/file_encrypt');
 const { decryptFile } = require('./js/file_decrypt');
 const { uploadToDrive } = require('./js/drive_upload');
 
+const { google } = require('googleapis');
+const { authorize } = require('./js/drive_auth');
+
 let mainWindow;
 let currentUser = null; // ✅ Track the currently logged-in user
 let currentEncryptionKey = null;//same 
@@ -168,7 +171,7 @@ ipcMain.on('request-encrypt-upload', async () => {
     // Example assuming you store the key globally as currentEncryptionKey:
     encryptFile(inputPath, outputPath, currentEncryptionKey);
 
-    // TODO: Add upload to cloud step here if needed
+    // TODO: Add upload to cloud step here if needed  
 });
 //SuperBad123*
 //tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
@@ -368,6 +371,83 @@ ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
         event.sender.send('decryption-done', ` Decryption failed: ${err.message}`);
     }
 });
+
+// Navigate to files.html 
+ipcMain.on('navigate-to-files', () => {
+  mainWindow.loadFile('pages/files.html');  // or adjust path as needed
+});
+
+// List/View files
+ipcMain.on('request-google-drive-files', (event) => {
+  authorize(async (auth) => {
+    const drive = google.drive({ version: 'v3', auth });
+
+    try {
+      const res = await drive.files.list({
+        q: "'root' in parents and trashed = false",
+        fields: 'files(id, name, size, modifiedTime)',
+        spaces: 'drive',
+        pageSize: 1000
+      });
+      //////////////
+      event.reply('response-google-drive-files', res.data.files);
+    } catch (err) {
+      console.error('Drive List Error:', err);
+      event.reply('response-google-drive-files', []);
+    }
+  });
+});
+
+// Delete files
+ipcMain.on('delete-google-drive-file', async (event, fileId) => {
+  console.log("🗑️ IPC received: delete-google-drive-file", fileId);
+
+  authorize(async (auth) => {
+    const drive = google.drive({ version: 'v3', auth });
+
+    try {
+      await drive.files.delete({ fileId });
+      console.log(`🗑️ File deleted: ${fileId}`);
+      event.sender.send('file-deleted', fileId);  // ✅ tell frontend to remove it
+    } catch (err) {
+      console.error("❌ Delete error:", err.message);
+    }
+  });
+});
+
+
+// Share files
+ipcMain.on('share-google-drive-file', async (event, fileId) => {
+  console.log("🔗 IPC received: share-google-drive-file", fileId);
+
+  authorize(async (auth) => {
+    const drive = google.drive({ version: 'v3', auth });
+
+    try {
+      // Create public permission
+      await drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone'
+        }
+      });
+
+      // Get the file metadata to retrieve the webViewLink
+      const { data } = await drive.files.get({
+        fileId,
+        fields: 'webViewLink'
+      });
+
+      console.log(`✅ File shared: ${fileId} → ${data.webViewLink}`);
+      event.sender.send('share-link-ready', { fileId, link: data.webViewLink });
+
+    } catch (err) {
+      console.error("❌ Share error:", err.message);
+    }
+  });
+});
+
 
   // Close app
   app.on('window-all-closed', () => {

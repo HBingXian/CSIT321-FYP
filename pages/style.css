@@ -101,3 +101,20 @@ input[type="email"] {
     position: static;
   }
 }
+
+/* File Table */
+#fileTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#fileTable th, #fileTable td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: left;
+}
+
+#fileTable th {
+  background-color: #eee;
+}
+
