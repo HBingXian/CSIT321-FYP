@@ -12,7 +12,7 @@ const { google } = require('googleapis');
 const { authorize } = require('./js/drive_auth');
 
 let mainWindow;
-let currentUser = null; // ✅ Track the currently logged-in user
+let currentUser = null; // Track the currently logged-in user
 let currentEncryptionKey = null;//same 
 
 
@@ -148,8 +148,8 @@ ipcMain.on('navigate-to-decrypt-page', () => {
     mainWindow.loadFile('pages/decrypt.html');
   }
 });
-/*
-// Handle Encrypt & Upload request ------------------------------------------------------------ Deprecated, must delete
+
+// Handle Encrypt & Upload request
 ipcMain.on('request-encrypt-upload', async () => {
     if (!currentUser) {
         console.log('User not logged in');
@@ -175,10 +175,8 @@ ipcMain.on('request-encrypt-upload', async () => {
 });
 //SuperBad123*
 //tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
-*/
 
-/*
-// Handle Download & Decrypt request ---------------------------------------- < Deprecated, must delete >
+// Handle Download & Decrypt request
 ipcMain.on('request-download-decrypt', async () => {
     if (!currentUser) {
         console.log('User not logged in');
@@ -208,7 +206,7 @@ ipcMain.on('request-download-decrypt', async () => {
 
     console.log('Decrypted file saved to:', savePath);
 });
-*/
+
 
 // Handle key generation
 ipcMain.on('generate-key', (event, passphrase) => {
