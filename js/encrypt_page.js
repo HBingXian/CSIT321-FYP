@@ -19,7 +19,7 @@ document.getElementById('selectFileBtn').addEventListener('click', () => {
     ipcRenderer.send('encrypt-file-from-page', keyInput);
 });
 
-// 🔁 Prompt function
+// Prompt function
 function showPrompt() {
     const goToGen = confirm("Invalid key format.\nWould you like to go to the Key Generation page?");
     if (goToGen) {

@@ -91,7 +91,7 @@ ipcMain.on('login-attempt', (event, { username, password }) => {
       if (!isMatch) {
         event.reply('login-response', { success: false, error: 'Invalid password' });
       } else {
-        currentUser = user.username; // ✅ Set the logged-in user
+        currentUser = user.username; //  Set the logged-in user
         event.reply('login-response', { success: true, user: user.username });
         mainWindow.loadFile('pages/dashboard.html');
       }
@@ -148,8 +148,8 @@ ipcMain.on('navigate-to-decrypt-page', () => {
     mainWindow.loadFile('pages/decrypt.html');
   }
 });
-
-// Handle Encrypt & Upload request
+/*
+// Handle Encrypt & Upload request ------------------------------------------------------------ Deprecated, must delete
 ipcMain.on('request-encrypt-upload', async () => {
     if (!currentUser) {
         console.log('User not logged in');
@@ -175,8 +175,10 @@ ipcMain.on('request-encrypt-upload', async () => {
 });
 //SuperBad123*
 //tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
+*/
 
-// Handle Download & Decrypt request
+/*
+// Handle Download & Decrypt request ---------------------------------------- < Deprecated, must delete >
 ipcMain.on('request-download-decrypt', async () => {
     if (!currentUser) {
         console.log('User not logged in');
@@ -206,8 +208,7 @@ ipcMain.on('request-download-decrypt', async () => {
 
     console.log('Decrypted file saved to:', savePath);
 });
-
-
+*/
 
 // Handle key generation
 ipcMain.on('generate-key', (event, passphrase) => {

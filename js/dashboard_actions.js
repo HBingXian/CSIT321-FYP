@@ -15,12 +15,12 @@ document.getElementById('recoverKeyBtn').addEventListener('click', () => {
     ipcRenderer.send('navigate-to-rec-key');
 });
 
-// Encrypt & Upload
-document.getElementById('encryptUploadBtn').addEventListener('click', () => {
-    ipcRenderer.send('request-encrypt-upload');
-});
+// Encrypt & Upload --------------- deprecated, must delete ----------------------------------
+//document.getElementById('encryptUploadBtn').addEventListener('click', () => {
+//    ipcRenderer.send('request-encrypt-upload');
+//});
 
-// Download & Decrypt
+// Download & Decrypt ---------------deprecated, must delete ----------------------------------
 document.getElementById('downloadDecryptBtn').addEventListener('click', () => {
     ipcRenderer.send('request-download-decrypt');
 });
