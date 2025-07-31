@@ -1,3 +1,6 @@
+// This module handles uploading files to Google Drive.
+// It uses the Google Drive API and requires OAuth2 authentication.
+// Make sure to have 'credentials.json' in the same directory as this file.
 const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
@@ -77,6 +80,7 @@ async function uploadFile(auth, filePath) {
   const fileMetadata = {
     name: path.basename(filePath),
     parents: [folderId], // Assign file to folder
+    description: description, // create a description field
   };
 
   const media = {
@@ -88,10 +92,11 @@ async function uploadFile(auth, filePath) {
     const file = await drive.files.create({
       resource: fileMetadata,
       media: media,
-      fields: 'id',
+      fields: 'id, description', // Include description in fields
     });
 
     console.log(`File uploaded to CrypterHelperUploads. File ID: ${file.data.id}`);
+    if (description) console.log(`Description: ${description}`);
   } catch (err) {
     console.error('Upload error:', err);
   }

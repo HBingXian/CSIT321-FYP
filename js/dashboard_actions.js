@@ -25,7 +25,7 @@ safeAddListener('recoverKeyBtn', 'click', () => {
   ipcRenderer.send('navigate-to-rec-key');
 });
 
-// Encrypt & Upload
+// Encrypt & Upload ------------- 
 safeAddListener('encryptUploadBtn', 'click', () => {
   ipcRenderer.send('request-encrypt-upload');
 });

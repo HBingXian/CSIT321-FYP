@@ -173,8 +173,7 @@ ipcMain.on('request-encrypt-upload', async () => {
 
     // TODO: Add upload to cloud step here if needed  
 });
-//SuperBad123*
-//tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
+
 
 // Handle Download & Decrypt request
 ipcMain.on('request-download-decrypt', async () => {
@@ -324,9 +323,8 @@ ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
   });
 });
 
-//Superbad123!
-//eMIAjg1Yx1Ub9ve4HisjKPlKjKNqQlmwnIBsLFxobPw=
-//handler to encrypt with manual key input
+
+/* ---------- old encryption code ---------- 
 ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
   if (canceled || filePaths.length === 0) return;
@@ -341,6 +339,30 @@ ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
     // Upload to Google Drive after encryption
     console.log("Uploading to Google Drive:", outputPath); // for testing
     uploadToDrive(outputPath);
+  } catch (err) {
+    console.error('Encryption or upload error:', err);
+    event.sender.send('encryption-done', 'Encryption failed.');
+  }
+});
+*/
+
+//new encryption code with description
+ipcMain.on('encrypt-file-from-page', async (event, data) => {
+  const { key: encryptionKey, description } = data;
+
+  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (canceled || filePaths.length === 0) return;
+
+  const inputPath = filePaths[0];
+  const outputPath = inputPath + '_encrypted.dat';
+
+  try {
+    encryptFile(inputPath, outputPath, encryptionKey);
+    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
+
+    // Upload to Google Drive with description
+    console.log("Uploading to Google Drive:", outputPath);
+    uploadToDrive(outputPath, description); // <-- pass description
   } catch (err) {
     console.error('Encryption or upload error:', err);
     event.sender.send('encryption-done', 'Encryption failed.');

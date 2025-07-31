@@ -1,4 +1,4 @@
-console.log("✅ delete_file.js loaded");
+console.log(" delete_file.js loaded");
 
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('delete-btn')) {
