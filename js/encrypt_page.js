@@ -6,6 +6,7 @@ const { ipcRenderer } = require('electron');
 
 document.getElementById('selectFileBtn').addEventListener('click', () => {
     const keyInput = document.getElementById('encryptionKeyInput').value.trim();
+    const descriptionInput = document.getElementById('fileDescriptionInput').value.trim();
 
     let decodedKey;
     try {
@@ -20,7 +21,10 @@ document.getElementById('selectFileBtn').addEventListener('click', () => {
         return;
     }
 
-    ipcRenderer.send('encrypt-file-from-page', keyInput);
+    ipcRenderer.send('encrypt-file-from-page', {
+        key: keyInput,
+        description: descriptionInput
+    });
 });
 
 
