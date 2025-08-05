@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
 const crypto = require('crypto'); 
 const { dialog } = require('electron');
 const { encryptFile } = require('./js/file_encrypt');
@@ -10,6 +11,11 @@ const { uploadToDrive } = require('./js/drive_upload');
 
 const { google } = require('googleapis');
 const { authorize } = require('./js/drive_auth');
+
+const express = require('express');
+const { getAccessToken } = require('./js/onedrive_upload');
+const { getValidAccessToken, uploadFileToOneDrive } = require('./js/onedrive_upload');
+const { getAuthUrl } = require('./scripts/init_onedrive_token');
 
 let mainWindow;
 let currentUser = null; // Track the currently logged-in user
@@ -38,7 +44,60 @@ function createWindow() {
 }
 
 // Start app
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  startAuthServer(); // <- launch Express to listen for /callback
+});
+
+// Onedrive auth server
+function startAuthServer() {
+  const app = express();
+  const PORT = 3000;
+
+  app.get('/callback', async (req, res) => {
+    const authCode = req.query.code;
+
+    res.send(`<h3>Authorization successful! You can close this window.</h3>`);
+
+    try {
+      await getAccessToken(authCode); // exchanges code for access + refresh token and saves it
+      mainWindow.webContents.send('onedrive-auth-success');
+    } catch (err) {
+      console.error('OAuth error:', err);
+      mainWindow.webContents.send('onedrive-auth-failed', err.message);
+    }
+  });
+
+  app.listen(PORT, () => {
+    console.log(`OAuth callback server running on http://localhost:${PORT}`);
+  });
+}
+
+ipcMain.handle('start-onedrive-upload', async (event) => {
+  let accessToken = await getValidAccessToken();
+
+  if (!accessToken) {
+    const authUrl = getAuthUrl();
+    require('electron').shell.openExternal(authUrl);
+    return { status: 'auth_required' };
+  }
+
+  const result = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (result.canceled || result.filePaths.length === 0) {
+    return { status: 'cancelled' };
+  }
+
+  const selectedFile = result.filePaths[0];
+  const outputPath = selectedFile + '_encrypted.dat';
+  if (!currentEncryptionKey) {
+    return { status: 'no_key', message: 'Encryption key not available. Generate or load a key first.' };
+  }
+  await encryptFile(selectedFile, outputPath, currentEncryptionKey);
+  const uploadResponse = await uploadFileToOneDrive(accessToken, outputPath);
+
+
+  return { status: 'success', fileName: uploadResponse.name };
+});
 
 // MySQL connection
 const db = mysql.createConnection({
