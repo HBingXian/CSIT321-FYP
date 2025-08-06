@@ -384,8 +384,8 @@ ipcMain.on('request-google-drive-files', (event) => {
 
     try {
       const res = await drive.files.list({
-        q: "'root' in parents and trashed = false",
-        fields: 'files(id, name, size, modifiedTime)',
+        q: "'1MHjdMCbEyY393GZL-_N1f5VBfp8zK0m8' in parents and trashed = false",
+        fields: 'files(id, name, size, modifiedTime, description)',
         spaces: 'drive',
         pageSize: 1000
       });
@@ -400,17 +400,17 @@ ipcMain.on('request-google-drive-files', (event) => {
 
 // Delete files
 ipcMain.on('delete-google-drive-file', async (event, fileId) => {
-  console.log("🗑️ IPC received: delete-google-drive-file", fileId);
+  console.log("IPC received: delete-google-drive-file", fileId);
 
   authorize(async (auth) => {
     const drive = google.drive({ version: 'v3', auth });
 
     try {
       await drive.files.delete({ fileId });
-      console.log(`🗑️ File deleted: ${fileId}`);
-      event.sender.send('file-deleted', fileId);  // ✅ tell frontend to remove it
+      console.log(`File deleted: ${fileId}`);
+      event.sender.send('file-deleted', fileId);  //tell frontend to remove it
     } catch (err) {
-      console.error("❌ Delete error:", err.message);
+      console.error(" Delete error:", err.message);
     }
   });
 });
