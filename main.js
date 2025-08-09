@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto'); // ✅ Added crypto module
+const crypto = require('crypto'); //  Added crypto module
 const { dialog } = require('electron');
 const { encryptFile } = require('./js/file_encrypt');
 const { decryptFile } = require('./js/file_decrypt');
@@ -12,7 +12,7 @@ const { google } = require('googleapis');
 const { authorize } = require('./js/drive_auth');
 
 let mainWindow;
-let currentUser = null; // ✅ Track the currently logged-in user
+let currentUser = null; // Track the currently logged-in user
 let currentEncryptionKey = null;//same 
 
 
@@ -91,7 +91,7 @@ ipcMain.on('login-attempt', (event, { username, password }) => {
       if (!isMatch) {
         event.reply('login-response', { success: false, error: 'Invalid password' });
       } else {
-        currentUser = user.username; // ✅ Set the logged-in user
+        currentUser = user.username; //  Set the logged-in user
         event.reply('login-response', { success: true, user: user.username });
         mainWindow.loadFile('pages/dashboard.html');
       }
@@ -150,6 +150,7 @@ ipcMain.on('navigate-to-decrypt-page', () => {
 });
 
 // Handle Encrypt & Upload request
+/*
 ipcMain.on('request-encrypt-upload', async () => {
     if (!currentUser) {
         console.log('User not logged in');
@@ -173,8 +174,7 @@ ipcMain.on('request-encrypt-upload', async () => {
 
     // TODO: Add upload to cloud step here if needed  
 });
-//SuperBad123*
-//tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
+*/
 
 // Handle Download & Decrypt request
 ipcMain.on('request-download-decrypt', async () => {
@@ -206,7 +206,6 @@ ipcMain.on('request-download-decrypt', async () => {
 
     console.log('Decrypted file saved to:', savePath);
 });
-
 
 
 // Handle key generation
@@ -325,9 +324,8 @@ ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
   });
 });
 
-//Superbad123!
-//eMIAjg1Yx1Ub9ve4HisjKPlKjKNqQlmwnIBsLFxobPw=
-//handler to encrypt with manual key input
+
+/* ---------- old encryption code ---------- 
 ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
   if (canceled || filePaths.length === 0) return;
@@ -347,6 +345,32 @@ ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
     event.sender.send('encryption-done', 'Encryption failed.');
   }
 });
+*/
+
+//new encryption code with description
+ipcMain.on('encrypt-file-from-page', async (event, data) => {
+  const { key: encryptionKey, description } = data;
+
+  console.log('ENCRYPTION KEY TYPE:', typeof encryptionKey, encryptionKey); // Debug
+
+  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (canceled || filePaths.length === 0) return;
+
+  const inputPath = filePaths[0];
+  const outputPath = inputPath + '_encrypted.dat';
+
+  try {
+    encryptFile(inputPath, outputPath, encryptionKey); // Make sure this is using the correct var
+    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
+
+    // Upload to Google Drive with description
+    uploadToDrive(outputPath, description);
+  } catch (err) {
+    console.error('Encryption or upload error:', err);
+    event.sender.send('encryption-done', 'Encryption failed.');
+  }
+});
+
 
 
 ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
@@ -384,8 +408,8 @@ ipcMain.on('request-google-drive-files', (event) => {
 
     try {
       const res = await drive.files.list({
-        q: "'1MHjdMCbEyY393GZL-_N1f5VBfp8zK0m8' in parents and trashed = false",
-        fields: 'files(id, name, size, modifiedTime, description)',
+        q: "'root' in parents and trashed = false",
+        fields: 'files(id, name, size, modifiedTime)',
         spaces: 'drive',
         pageSize: 1000
       });
@@ -400,17 +424,17 @@ ipcMain.on('request-google-drive-files', (event) => {
 
 // Delete files
 ipcMain.on('delete-google-drive-file', async (event, fileId) => {
-  console.log("IPC received: delete-google-drive-file", fileId);
+  console.log("🗑️ IPC received: delete-google-drive-file", fileId);
 
   authorize(async (auth) => {
     const drive = google.drive({ version: 'v3', auth });
 
     try {
       await drive.files.delete({ fileId });
-      console.log(`File deleted: ${fileId}`);
-      event.sender.send('file-deleted', fileId);  //tell frontend to remove it
+      console.log(`🗑️ File deleted: ${fileId}`);
+      event.sender.send('file-deleted', fileId);  // ✅ tell frontend to remove it
     } catch (err) {
-      console.error(" Delete error:", err.message);
+      console.error("❌ Delete error:", err.message);
     }
   });
 });
