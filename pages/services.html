@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Connect Cloud Services</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .provider { display:flex; align-items:center; gap:12px; margin:12px 0; }
+    .status { font-size: 0.9rem; opacity:.8 }
+    .row { display:flex; align-items:center; gap:10px }
+    button { padding: 6px 12px; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-title">Connect Cloud Services</div>
+    <button class="home-btn" onclick="window.location.href='dashboard.html'">Dashboard</button>
+  </header>
+
+  <main class="container">
+    <section>
+      <h3>Choose a service to connect</h3>
+
+      <div class="provider">
+        <img src="../assets/google-drive.png" alt="Google Drive" width="28" height="28">
+        <div class="row">
+          <button id="btnGoogle">Connect Google Drive</button>
+          <span id="googleStatus" class="status">Not connected</span>
+        </div>
+      </div>
+
+      <div class="provider">
+        <img src="../assets/onedrive.png" alt="OneDrive" width="28" height="28">
+        <div class="row">
+          <button id="btnOneDrive">Connect OneDrive</button>
+          <span id="oneDriveStatus" class="status">Not connected</span>
+        </div>
+      </div>
+
+      <hr />
+
+      <div class="row">
+        <label><input type="radio" name="activeProvider" value="google" /> Use Google Drive</label>
+        <label><input type="radio" name="activeProvider" value="onedrive" /> Use OneDrive</label>
+        <button id="btnSaveDefault">Save Default</button>
+      </div>
+      <div id="defaultStatus" class="status" style="margin-top:8px;"></div>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 SecureCloud. All rights reserved.
+  </footer>
+
+  <script src="../js/services.js"></script>
+</body>
+</html>
