@@ -1,31 +1,63 @@
-// Import ipcRenderer to communicate with main.js in Electron
+// Import ipcRenderer to communicate with main.js in 
 const { ipcRenderer } = require('electron');
 
-// Handle form submission
+const result = document.getElementById('result');
+const downloadBtn = document.getElementById('downloadKeyBtn');
+
+let latestKey = null;
+
+// Handle form submission for passphrase-based key
 document.getElementById('keyForm').addEventListener('submit', (e) => {
   e.preventDefault();
 
-  // Get the user-entered passphrase
+  // Validate passphrase: 12+ chars, upper, lower, number, symbol
   const passphrase = document.getElementById('passphrase').value;
-
-  // 12 chars long, uppercase, lowercase, symbols, numbers
-  // Validate passphrase using a regular expression:
   const isValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{12,}$/.test(passphrase);
-  // If invalid, show a message and stop
+
   if (!isValid) {
-    document.getElementById('result').textContent =
-      "Passphrase must be 12+ chars with upper, lower, number & symbol.";
+    result.textContent = "Passphrase must be 12+ chars with upper, lower, number & symbol.";
+    downloadBtn.style.display = 'none';
     return;
   }
-
-  // If valid, send passphrase to main.js for hashing + storing
+   // Send passphrase to main.js
   ipcRenderer.send('generate-key', passphrase);
 });
 
-// Listen for a response back from main.js
+// Handle "Generate Key Randomly" button click
+document.getElementById('randomKeyBtn').addEventListener('click', () => {
+  ipcRenderer.send('generate-random-key');
+});
+
+// Listen for key generation response
 ipcRenderer.on('key-status', (event, data) => {
-  document.getElementById('result').textContent = data.message;
+  result.innerHTML = `${data.message}`;
   if (data.encryptionKey) {
-    document.getElementById('result').innerHTML += `<br>Encryption Key: ${data.encryptionKey}`;
+    latestKey = data.encryptionKey;
+    result.innerHTML += `<br><strong>Encryption Key:</strong> ${latestKey}`;
+    downloadBtn.style.display = 'inline-block'; // show button
+  } else {
+    latestKey = null;
+    downloadBtn.style.display = 'none';
   }
+});
+
+// Download button click handler - save key as JSON file
+downloadBtn.addEventListener('click', () => {
+  if (!latestKey) return;
+
+  const jsonData = JSON.stringify({ encryptionKey: latestKey }, null, 2);
+  const blob = new Blob([jsonData], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'crypterhelper_key.json';
+  document.body.appendChild(a);
+  a.click();
+
+  // Cleanup
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
 });
