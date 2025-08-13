@@ -72,14 +72,15 @@ async function ensureAppFolderExists(drive) {
   return folder.data.id;
 }
 
-async function uploadFile(auth, filePath) {
+async function uploadFile(auth, filePath, description) {
+
   const drive = google.drive({ version: 'v3', auth });
-  const folderId = await ensureAppFolderExists(drive); // Ensure folder
+  const folderId = await ensureAppFolderExists(drive);
 
   const fileMetadata = {
     name: path.basename(filePath),
-    parents: [folderId], // Assign file to folder
-    description: description, // create a description field
+    parents: [folderId],
+    description: description || '', // use empty string if undefined
   };
 
   const media = {
@@ -91,7 +92,7 @@ async function uploadFile(auth, filePath) {
     const file = await drive.files.create({
       resource: fileMetadata,
       media: media,
-      fields: 'id, description', // Include description in fields
+      fields: 'id, description',
     });
 
     console.log(`File uploaded to CrypterHelperUploads. File ID: ${file.data.id}`);
@@ -102,10 +103,10 @@ async function uploadFile(auth, filePath) {
 }
 
 // Public function to use from main.js
-function uploadToDrive(filePath) {
-    console.log("uploadToDrive() called with:", filePath);  // Add this
+function uploadToDrive(filePath,  description = '') {
+    console.log("uploadToDrive() called with:", filePath, description);  // Add this
   authorize(async (auth) => {
-  await uploadFile(auth, filePath);
+  await uploadFile(auth, filePath, description);
 });
 }
 

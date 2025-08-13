@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto'); 
+const crypto = require('crypto'); //  Added crypto module
 const { dialog } = require('electron');
 const { encryptFile } = require('./js/file_encrypt');
 const { decryptFile } = require('./js/file_decrypt');
@@ -141,6 +141,7 @@ ipcMain.on('navigate-to-decrypt-page', () => {
 });
 
 // Handle Encrypt & Upload request
+/*
 ipcMain.on('request-encrypt-upload', async () => {
     if (!currentUser) {
         console.log('User not logged in');
@@ -164,7 +165,7 @@ ipcMain.on('request-encrypt-upload', async () => {
 
     // TODO: Add upload to cloud step here if needed  
 });
-
+*/
 
 // Handle Download & Decrypt request
 ipcMain.on('request-download-decrypt', async () => {
@@ -288,6 +289,8 @@ ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
 ipcMain.on('encrypt-file-from-page', async (event, data) => {
   const { key: encryptionKey, description } = data;
 
+  console.log('ENCRYPTION KEY TYPE:', typeof encryptionKey, encryptionKey); // Debug
+
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
   if (canceled || filePaths.length === 0) return;
 
@@ -295,17 +298,17 @@ ipcMain.on('encrypt-file-from-page', async (event, data) => {
   const outputPath = inputPath + '_encrypted.dat';
 
   try {
-    encryptFile(inputPath, outputPath, encryptionKey);
+    encryptFile(inputPath, outputPath, encryptionKey); // Make sure this is using the correct var
     event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
 
     // Upload to Google Drive with description
-    console.log("Uploading to Google Drive:", outputPath);
-    uploadToDrive(outputPath, description); // <-- pass description
+    uploadToDrive(outputPath, description);
   } catch (err) {
     console.error('Encryption or upload error:', err);
     event.sender.send('encryption-done', 'Encryption failed.');
   }
 });
+
 
 
 ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
