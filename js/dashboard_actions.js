@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 
-// Logout functionality
+// Logout
 document.getElementById('logoutBtn').addEventListener('click', () => {
     ipcRenderer.send('logout-request');
 });

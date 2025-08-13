@@ -3,6 +3,7 @@ const path = require('path');
 const http = require('http');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
 const crypto = require('crypto');
 const { dialog } = require('electron');
 
@@ -15,6 +16,10 @@ const { google } = require('googleapis');
 // NEW: per-user Google auth helpers (keytar-based)
 const gAuth = require('./auth/google_drive_auth');
 
+const express = require('express');
+const { getAccessToken } = require('./js/onedrive_upload');
+const { getValidAccessToken, uploadFileToOneDrive } = require('./js/onedrive_upload');
+const { getAuthUrl } = require('./scripts/init_onedrive_token');
 let mainWindow;
 let currentUser = null; // Track the currently logged-in user
 let currentEncryptionKey = null;//same 
@@ -42,7 +47,121 @@ function createWindow() {
 }
 
 // Start app
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  startAuthServer(); // <- launch Express to listen for /callback
+});
+
+// Onedrive auth server
+function startAuthServer() {
+  const app = express();
+  const PORT = 3000;
+
+  app.get('/callback', async (req, res) => {
+    const authCode = req.query.code;
+
+    res.send(`<h3>Authorization successful! You can close this window.</h3>`);
+
+    try {
+      await getAccessToken(authCode); // exchanges code for access + refresh token and saves it
+      mainWindow.webContents.send('onedrive-auth-success');
+    } catch (err) {
+      console.error('OAuth error:', err);
+      mainWindow.webContents.send('onedrive-auth-failed', err.message);
+    }
+  });
+
+  app.listen(PORT, () => {
+    console.log(`OAuth callback server running on http://localhost:${PORT}`);
+  });
+}
+
+ipcMain.handle('start-onedrive-upload', async (event) => {
+  let accessToken = await getValidAccessToken();
+
+  if (!accessToken) {
+    const authUrl = getAuthUrl();
+    require('electron').shell.openExternal(authUrl);
+    return { status: 'auth_required' };
+  }
+
+  const result = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (result.canceled || result.filePaths.length === 0) {
+    return { status: 'cancelled' };
+  }
+
+  const selectedFile = result.filePaths[0];
+  const outputPath = selectedFile + '_encrypted.dat';
+  if (!currentEncryptionKey) {
+    return { status: 'no_key', message: 'Encryption key not available. Generate or load a key first.' };
+  }
+  await encryptFile(selectedFile, outputPath, currentEncryptionKey);
+  const uploadResponse = await uploadFileToOneDrive(accessToken, outputPath);
+
+
+  return { status: 'success', fileName: uploadResponse.name };
+});
+
+ipcMain.handle('upload-to-google-drive', async (event, filePath) => {
+  try {
+    await uploadFileToGoogleDrive(filePath); // your existing function
+    return { status: 'success' };
+  } catch (err) {
+    console.error('Google Drive Upload Error:', err);
+    return { status: 'error', message: err.message };
+  }
+});
+
+ipcMain.handle('encrypt-file-from-page-to', async (event, { encryptionKey, destination }) => {
+  try {
+    // 1) Let user choose source file (same as your manual flow)
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return { status: 'cancelled' };
+
+    const inputPath = filePaths[0];
+    const outputPath = inputPath + '_encrypted.dat';
+
+    // 2) Encrypt with user-supplied key (same as your manual flow)
+    await encryptFile(inputPath, outputPath, encryptionKey);
+
+    // Ensure the file is really on disk before using it
+    let waited = 0;
+    while (!fs.existsSync(outputPath) && waited < 3000) {
+      await new Promise(r => setTimeout(r, 100));
+      waited += 100;
+    }
+    if (!fs.existsSync(outputPath)) {
+      return { status: 'error', message: 'Encrypted file was not created.' };
+    }
+
+    // 3) Destination routing
+    if (destination === 'local') {
+      return { status: 'local_only', message: 'Encrypted locally.' };
+    }
+
+    if (destination === 'google') {
+      await uploadToDrive(outputPath); // your existing function
+      return { status: 'success', message: 'Uploaded to Google Drive.' };
+    }
+
+    if (destination === 'onedrive') {
+      let accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        // Kick off login; user clicks again after auth
+        shell.openExternal(getAuthUrl());
+        return { status: 'auth_required' };
+      }
+      await uploadFileToOneDrive(accessToken, outputPath);
+      return { status: 'success', message: 'Uploaded to OneDrive.' };
+    }
+
+    // Fallback
+    return { status: 'error', message: 'Unknown destination.' };
+  } catch (err) {
+    console.error('encrypt-file-from-page-to error:', err);
+    return { status: 'error', message: err?.message || 'Unexpected error' };
+  }
+});
 
 // MySQL connection
 const db = mysql.createConnection({
@@ -95,7 +214,7 @@ ipcMain.on('login-attempt', (event, { username, password }) => {
       if (!isMatch) {
         event.reply('login-response', { success: false, error: 'Invalid password' });
       } else {
-        currentUser = user.username; //  Set the logged-in user
+        currentUser = user.username; //Set the logged-in user
         event.reply('login-response', { success: true, user: user.username });
         mainWindow.loadFile('pages/dashboard.html');
       }
@@ -115,15 +234,6 @@ ipcMain.on('logout-request', () => {
 ipcMain.on('navigate-to-gen-key', () => {
   if (mainWindow) {
     mainWindow.loadFile('pages/gen_key.html').then(() => {
-      mainWindow.focus();
-    });
-  }
-});
-
-// Navigate to key recovery
-ipcMain.on('navigate-to-rec-key', () => {
-  if (mainWindow) {
-    mainWindow.loadFile('pages/rec_key.html').then(() => {
       mainWindow.focus();
     });
   }
@@ -448,22 +558,21 @@ ipcMain.on('request-google-drive-files', async (event, appUserKey) => {
   }
 });
 
-
-// Delete files
+//Delete files
 ipcMain.on('delete-google-drive-file', async (event, { fileId, appUserKey }) => {
   try {
     const auth = await gAuth.authorizeGoogleFor(appUserKey || currentUser);
     const drive = google.drive({ version: 'v3', auth });
 
     await drive.files.delete({ fileId });
-    console.log(`🗑️ File deleted: ${fileId}`);
+    console.log(`File deleted: ${fileId}`);
     event.sender.send('file-deleted', fileId);
   } catch (err) {
     console.error('Delete error:', err.message);
   }
 });
 
-// Share files
+//Share files
 ipcMain.on('share-google-drive-file', async (event, { fileId, appUserKey }) => {
   try {
     const auth = await gAuth.authorizeGoogleFor(appUserKey || currentUser);
@@ -482,11 +591,11 @@ ipcMain.on('share-google-drive-file', async (event, { fileId, appUserKey }) => {
       fields: 'webViewLink'
     });
 
-    console.log(`✅ File shared: ${fileId} → ${data.webViewLink}`);
+    console.log(`File shared: ${fileId} → ${data.webViewLink}`);
     event.sender.send('share-link-ready', { fileId, link: data.webViewLink });
 
   } catch (err) {
-    console.error('❌ Share error:', err.message);
+    console.error('Share error:', err.message);
   }
 });
 
@@ -585,20 +694,20 @@ ipcMain.handle('cloud:disconnect-google', async (_e, appUserKey) => {
 
 // Navigate to services.html (Manage Connections)
 ipcMain.on('navigate-to-services', (event) => {
-  console.log('🔁 IPC received: navigate-to-services');
+  console.log('IPC received: navigate-to-services');
 
   if (mainWindow) {
     mainWindow.loadFile('pages/services.html')
       .then(() => {
-        console.log('✅ Loaded: services.html');
+        console.log('Loaded: services.html');
         mainWindow.focus();
       })
       .catch(err => {
-        console.error('❌ Failed to load services.html:', err);
+        console.error('Failed to load services.html:', err);
         event.sender.send('navigation-error', 'Failed to load services page');
       });
   } else {
-    console.warn('⚠️ mainWindow not defined when trying to navigate to services');
+    console.warn('mainWindow not defined when trying to navigate to services');
     event.sender.send('navigation-error', 'Main window is not available');
   }
 });

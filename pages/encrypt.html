@@ -12,9 +12,18 @@
     <main>
          <h2>Encrypt a File</h2>
   <label for="encryptionKeyInput">Enter your Encryption Key:</label><br>
-  <input type="text" id="encryptionKeyInput" placeholder="Base64 key..." size="60"><br><br>
+  <input type="text" id="encryptionKeyInput" placeholder="Base64 key..." size="60">
+
+  <label for="uploadDest" style="display:block;margin-top:8px;">Upload To</label>
+  <select id="uploadDest">
+    <option value="google" selected>Google Drive</option>
+    <option value="onedrive">OneDrive</option>
+    <option value="local">Encrypt only (no upload)</option>
+  </select>
+  <br><br>
 
   <button id="selectFileBtn">Select File to Encrypt</button>
+    <button id="importKeyBtn">Import Key from JSON</button>
 
   <div id="result"></div>
     </main>
