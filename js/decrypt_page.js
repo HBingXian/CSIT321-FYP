@@ -24,7 +24,7 @@ document.getElementById('homeBtn').addEventListener('click', () => {
 });
 
 function showPrompt() {
-    const goToGen = confirm("❌ Invalid key format.\nWould you like to go to the Key Generation page?");
+    const goToGen = confirm(" Invalid key format.\nWould you like to go to the Key Generation page?");
     if (goToGen) {
         ipcRenderer.send('navigate-to-gen-key');
     }
