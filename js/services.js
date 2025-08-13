@@ -1,65 +1,44 @@
-// js/services.js
 const { ipcRenderer } = require('electron');
 
-const btnGoogle = document.getElementById('btnGoogle');
-const btnOneDrive = document.getElementById('btnOneDrive');
+const googleConnectBtn = document.getElementById('googleConnectBtn');
+const googleDisconnectBtn = document.getElementById('googleDisconnectBtn');
 const googleStatus = document.getElementById('googleStatus');
-const oneDriveStatus = document.getElementById('oneDriveStatus');
-const btnSaveDefault = document.getElementById('btnSaveDefault');
-const defaultStatus = document.getElementById('defaultStatus');
 
-function refreshStatuses() {
-  ipcRenderer.invoke('cloud:get-status').then(status => {
-    googleStatus.textContent = status.googleConnected ? 'Connected' : 'Not connected';
-    oneDriveStatus.textContent = status.oneDriveConnected ? 'Connected' : 'Not connected';
+// Load initial connection status
+window.addEventListener('DOMContentLoaded', async () => {
+  const status = await ipcRenderer.invoke('cloud:get-status');
 
-    const radios = document.querySelectorAll('input[name="activeProvider"]');
-    radios.forEach(r => r.checked = (r.value === status.defaultProvider));
-    defaultStatus.textContent = status.defaultProvider
-      ? `Default provider: ${status.defaultProvider}`
-      : 'No default provider saved';
-  });
-}
-
-btnGoogle.addEventListener('click', async () => {
-  btnGoogle.disabled = true;
-  googleStatus.textContent = 'Connecting...';
-  try {
-    const ok = await ipcRenderer.invoke('oauth:google');
-    googleStatus.textContent = ok ? 'Connected' : 'Not connected';
-  } catch (e) {
-    console.error(e);
-    googleStatus.textContent = 'Error';
-  } finally {
-    btnGoogle.disabled = false;
-    refreshStatuses();
+  if (status.googleConnected) {
+    googleStatus.textContent = 'Google Drive is connected.';
+    googleConnectBtn.style.display = 'none';
+    googleDisconnectBtn.style.display = 'inline-block';
+  } else {
+    googleStatus.textContent = 'Google Drive is not connected.';
+    googleConnectBtn.style.display = 'inline-block';
+    googleDisconnectBtn.style.display = 'none';
   }
 });
 
-btnOneDrive.addEventListener('click', async () => {
-  btnOneDrive.disabled = true;
-  oneDriveStatus.textContent = 'Connecting...';
-  try {
-    const ok = await ipcRenderer.invoke('oauth:onedrive');
-    oneDriveStatus.textContent = ok ? 'Connected' : 'Not connected';
-  } catch (e) {
-    console.error(e);
-    oneDriveStatus.textContent = 'Error';
-  } finally {
-    btnOneDrive.disabled = false;
-    refreshStatuses();
+// Handle connect
+googleConnectBtn.addEventListener('click', async () => {
+  const success = await ipcRenderer.invoke('oauth:google');
+  if (success) {
+    googleStatus.textContent = 'Google Drive connected successfully.';
+    googleConnectBtn.style.display = 'none';
+    googleDisconnectBtn.style.display = 'inline-block';
+  } else {
+    googleStatus.textContent = 'Connection failed. Please try again.';
   }
 });
 
-btnSaveDefault.addEventListener('click', async () => {
-  const choice = document.querySelector('input[name="activeProvider"]:checked');
-  if (!choice) {
-    defaultStatus.textContent = 'Pick a provider first.';
-    return;
+// Handle disconnect
+googleDisconnectBtn.addEventListener('click', async () => {
+  const result = await ipcRenderer.invoke('cloud:disconnect-google');
+  if (result.ok) {
+    googleStatus.textContent = 'Google Drive has been disconnected.';
+    googleConnectBtn.style.display = 'inline-block';
+    googleDisconnectBtn.style.display = 'none';
+  } else {
+    googleStatus.textContent = 'Failed to disconnect.';
   }
-  await ipcRenderer.invoke('cloud:set-default', choice.value);
-  refreshStatuses();
 });
-
-// initial
-document.addEventListener('DOMContentLoaded', refreshStatuses); 

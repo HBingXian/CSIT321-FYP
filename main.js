@@ -1,15 +1,19 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
+const http = require('http');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto'); //  Added crypto module
+const crypto = require('crypto');
 const { dialog } = require('electron');
+
 const { encryptFile } = require('./js/file_encrypt');
 const { decryptFile } = require('./js/file_decrypt');
 const { uploadToDrive } = require('./js/drive_upload');
 
 const { google } = require('googleapis');
-const { authorize } = require('./js/drive_auth');
+
+// NEW: per-user Google auth helpers (keytar-based)
+const gAuth = require('./auth/google_drive_auth');
 
 let mainWindow;
 let currentUser = null; // Track the currently logged-in user
@@ -347,7 +351,7 @@ ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
 });
 */
 
-//new encryption code with description
+/*//new encryption code with description
 ipcMain.on('encrypt-file-from-page', async (event, data) => {
   const { key: encryptionKey, description } = data;
 
@@ -369,9 +373,32 @@ ipcMain.on('encrypt-file-from-page', async (event, data) => {
     console.error('Encryption or upload error:', err);
     event.sender.send('encryption-done', 'Encryption failed.');
   }
+}); */  
+
+//New ipc call for new auth flow
+ipcMain.on('encrypt-file-from-page', async (event, data) => {
+  const { key: encryptionKey, description } = data;
+
+  console.log('ENCRYPTION KEY TYPE:', typeof encryptionKey, encryptionKey);
+
+  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (canceled || filePaths.length === 0) return;
+
+  const inputPath = filePaths[0];
+  const outputPath = inputPath + '_encrypted.dat';
+
+  try {
+    encryptFile(inputPath, outputPath, encryptionKey);
+    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
+
+    //  Use new Google Drive auth flow
+    const auth = await gAuth.authorizeGoogleFor(currentUser);
+    await uploadToDrive(outputPath, description, auth);
+  } catch (err) {
+    console.error('Encryption or upload error:', err);
+    event.sender.send('encryption-done', 'Encryption failed.');
+  }
 });
-
-
 
 ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
     const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
@@ -401,77 +428,180 @@ ipcMain.on('navigate-to-files', () => {
   mainWindow.loadFile('pages/files.html');  // or adjust path as needed
 });
 
-// List/View files
-ipcMain.on('request-google-drive-files', (event) => {
-  authorize(async (auth) => {
+//List / View files ggdrive
+ipcMain.on('request-google-drive-files', async (event, appUserKey) => {
+  try {
+    const auth = await gAuth.authorizeGoogleFor(appUserKey || currentUser);
     const drive = google.drive({ version: 'v3', auth });
 
-    try {
-      const res = await drive.files.list({
-        q: "'root' in parents and trashed = false",
-        fields: 'files(id, name, size, modifiedTime)',
-        spaces: 'drive',
-        pageSize: 1000
-      });
-      //////////////
-      event.reply('response-google-drive-files', res.data.files);
-    } catch (err) {
-      console.error('Drive List Error:', err);
-      event.reply('response-google-drive-files', []);
-    }
-  });
+    const res = await drive.files.list({
+      q: "'1MHjdMCbEyY393GZL-_N1f5VBfp8zK0m8' in parents and trashed = false",
+      fields: 'files(id, name, size, modifiedTime, description)',
+      spaces: 'drive',
+      pageSize: 1000
+    });
+
+    event.reply('response-google-drive-files', res.data.files);
+  } catch (err) {
+    console.error('Drive List Error:', err);
+    event.reply('response-google-drive-files', []);
+  }
 });
+
 
 // Delete files
-ipcMain.on('delete-google-drive-file', async (event, fileId) => {
-  console.log("🗑️ IPC received: delete-google-drive-file", fileId);
-
-  authorize(async (auth) => {
+ipcMain.on('delete-google-drive-file', async (event, { fileId, appUserKey }) => {
+  try {
+    const auth = await gAuth.authorizeGoogleFor(appUserKey || currentUser);
     const drive = google.drive({ version: 'v3', auth });
 
-    try {
-      await drive.files.delete({ fileId });
-      console.log(`🗑️ File deleted: ${fileId}`);
-      event.sender.send('file-deleted', fileId);  // ✅ tell frontend to remove it
-    } catch (err) {
-      console.error("❌ Delete error:", err.message);
-    }
-  });
+    await drive.files.delete({ fileId });
+    console.log(`🗑️ File deleted: ${fileId}`);
+    event.sender.send('file-deleted', fileId);
+  } catch (err) {
+    console.error('Delete error:', err.message);
+  }
 });
-
 
 // Share files
-ipcMain.on('share-google-drive-file', async (event, fileId) => {
-  console.log("🔗 IPC received: share-google-drive-file", fileId);
-
-  authorize(async (auth) => {
+ipcMain.on('share-google-drive-file', async (event, { fileId, appUserKey }) => {
+  try {
+    const auth = await gAuth.authorizeGoogleFor(appUserKey || currentUser);
     const drive = google.drive({ version: 'v3', auth });
 
-    try {
-      // Create public permission
-      await drive.permissions.create({
-        fileId,
-        requestBody: {
-          role: 'reader',
-          type: 'anyone'
-        }
-      });
+    await drive.permissions.create({
+      fileId,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone'
+      }
+    });
 
-      // Get the file metadata to retrieve the webViewLink
-      const { data } = await drive.files.get({
-        fileId,
-        fields: 'webViewLink'
-      });
+    const { data } = await drive.files.get({
+      fileId,
+      fields: 'webViewLink'
+    });
 
-      console.log(`✅ File shared: ${fileId} → ${data.webViewLink}`);
-      event.sender.send('share-link-ready', { fileId, link: data.webViewLink });
+    console.log(`✅ File shared: ${fileId} → ${data.webViewLink}`);
+    event.sender.send('share-link-ready', { fileId, link: data.webViewLink });
 
-    } catch (err) {
-      console.error("❌ Share error:", err.message);
-    }
-  });
+  } catch (err) {
+    console.error('❌ Share error:', err.message);
+  }
 });
 
+// New ipc for google drive consent page.
+// Runs full Google OAuth for the current user and persists tokens via keytar
+async function runGoogleOAuthFor(appUserKey) {
+  if (!appUserKey) throw new Error('No app user is logged in.');
+
+  const oAuth2 = gAuth.newOAuthClient();
+
+  // Grab the localhost redirect from credentials.json
+  const redirectUri =
+    oAuth2.redirectUri || oAuth2.redirect_uris?.[0] || oAuth2.redirectUri_;
+  if (!redirectUri || !redirectUri.startsWith('http://localhost:')) {
+    throw new Error('credentials.json must have a http://localhost:<port> redirect URI');
+  }
+  const urlObj = new URL(redirectUri);
+  const listenPort = Number(urlObj.port);
+
+  const scopes = ['https://www.googleapis.com/auth/drive.file'];
+  const authUrl = oAuth2.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: scopes,
+  });
+
+  // Spin up a tiny local server to catch the OAuth redirect
+  const code = await new Promise((resolve, reject) => {
+    const server = http.createServer((req, res) => {
+      const reqUrl = new URL(req.url, `http://localhost:${listenPort}`);
+      const codeParam = reqUrl.searchParams.get('code');
+      const errorParam = reqUrl.searchParams.get('error');
+
+      if (errorParam) {
+        res.writeHead(400, {'Content-Type': 'text/html'});
+        res.end('<h3>Google sign-in failed.</h3>You can close this window.');
+        server.close();
+        return reject(new Error(`OAuth error: ${errorParam}`));
+      }
+
+      if (codeParam) {
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        res.end('<h3>Google sign-in successful.</h3>You can close this window.');
+        server.close();
+        return resolve(codeParam);
+      }
+
+      res.writeHead(404); res.end();
+    });
+
+    server.listen(listenPort, () => {
+      shell.openExternal(authUrl).catch(reject);
+    });
+    server.on('error', reject);
+  });
+
+  // Exchange code for tokens and save them per user
+  const { tokens } = await oAuth2.getToken(code);
+  oAuth2.setCredentials(tokens);
+  await gAuth.saveGoogleTokens(oAuth2, appUserKey);
+  return true;
+}
+
+// IPC: start OAuth for the current user (or explicit key)
+ipcMain.removeHandler('oauth:google');
+ipcMain.handle('oauth:google', async (_e, appUserKey) => {
+  try {
+    const key = appUserKey || currentUser;
+    const ok = await runGoogleOAuthFor(key);
+    return !!ok;
+  } catch (err) {
+    console.error('[oauth:google] error:', err);
+    return false;
+  }
+});
+
+ipcMain.removeHandler('cloud:get-status');
+ipcMain.handle('cloud:get-status', async (_e, appUserKey) => {
+  const key = appUserKey || currentUser;
+  const googleConnected = key ? await gAuth.isGoogleConnected(key) : false;
+  return {
+    googleConnected,
+    oneDriveConnected: false,  // later
+    defaultProvider: ''        // add if you want to store one
+  };
+});
+
+ipcMain.removeHandler('cloud:disconnect-google');
+ipcMain.handle('cloud:disconnect-google', async (_e, appUserKey) => {
+  const key = appUserKey || currentUser;
+  if (!key) return { ok: false };
+  await gAuth.disconnectGoogle(key);
+  return { ok: true };
+});
+
+
+// Navigate to services.html (Manage Connections)
+ipcMain.on('navigate-to-services', (event) => {
+  console.log('🔁 IPC received: navigate-to-services');
+
+  if (mainWindow) {
+    mainWindow.loadFile('pages/services.html')
+      .then(() => {
+        console.log('✅ Loaded: services.html');
+        mainWindow.focus();
+      })
+      .catch(err => {
+        console.error('❌ Failed to load services.html:', err);
+        event.sender.send('navigation-error', 'Failed to load services page');
+      });
+  } else {
+    console.warn('⚠️ mainWindow not defined when trying to navigate to services');
+    event.sender.send('navigation-error', 'Main window is not available');
+  }
+});
 
   // Close app
   app.on('window-all-closed', () => {

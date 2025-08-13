@@ -2,55 +2,91 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Connect Cloud Services</title>
+  <title>Cloud Connections</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    .provider { display:flex; align-items:center; gap:12px; margin:12px 0; }
-    .status { font-size: 0.9rem; opacity:.8 }
-    .row { display:flex; align-items:center; gap:10px }
-    button { padding: 6px 12px; }
+    main {
+      padding: 20px;
+    }
+
+    .cloud-service {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .cloud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cloud-name {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    .status {
+      font-size: 0.95em;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.95em;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .connect-btn {
+      background-color: #1a73e8;
+      color: white;
+    }
+
+    .connect-btn:hover {
+      background-color: #0c5ed7;
+    }
+
+    .disconnect-btn {
+      background-color: #d93025;
+      color: white;
+    }
+
+    .disconnect-btn:hover {
+      background-color: #b1271b;
+    }
   </style>
 </head>
 <body>
   <header class="header">
-    <div class="header-title">Connect Cloud Services</div>
+    <div class="header-title">CrypterHelper</div>
     <button class="home-btn" onclick="window.location.href='dashboard.html'">Dashboard</button>
   </header>
 
   <main class="container">
     <section>
-      <h3>Choose a service to connect</h3>
+      <h3>Manage Cloud Connections</h3>
 
-      <div class="provider">
-        <img src="../assets/google-drive.png" alt="Google Drive" width="28" height="28">
-        <div class="row">
-          <button id="btnGoogle">Connect Google Drive</button>
-          <span id="googleStatus" class="status">Not connected</span>
+      <div class="cloud-service">
+        <div class="cloud-header">
+          <div class="cloud-name">Google Drive</div>
+          <div>
+            <button id="googleConnectBtn" class="btn connect-btn">Connect</button>
+            <button id="googleDisconnectBtn" class="btn disconnect-btn" style="display: none;">Disconnect</button>
+          </div>
         </div>
+        <div class="status" id="googleStatus">Checking connection...</div>
       </div>
 
-      <div class="provider">
-        <img src="../assets/onedrive.png" alt="OneDrive" width="28" height="28">
-        <div class="row">
-          <button id="btnOneDrive">Connect OneDrive</button>
-          <span id="oneDriveStatus" class="status">Not connected</span>
-        </div>
-      </div>
-
-      <hr />
-
-      <div class="row">
-        <label><input type="radio" name="activeProvider" value="google" /> Use Google Drive</label>
-        <label><input type="radio" name="activeProvider" value="onedrive" /> Use OneDrive</label>
-        <button id="btnSaveDefault">Save Default</button>
-      </div>
-      <div id="defaultStatus" class="status" style="margin-top:8px;"></div>
     </section>
   </main>
 
-  <footer>
-    &copy; 2025 SecureCloud. All rights reserved.
-  </footer>
+  <footer>© 2025 CrypterHelper</footer>
 
   <script src="../js/services.js"></script>
 </body>
