@@ -1,3 +1,7 @@
+//current
+// This module handles the encryption of files using a user-provided key.
+// It uses Electron's IPC to communicate with the main process for file selection and encryption.
+// Ensure you have the necessary modules installed: electron, crypto, fs, path 
 const { ipcRenderer } = require('electron');
 
 document.getElementById('selectFileBtn').addEventListener('click', async () => {
@@ -43,7 +47,8 @@ document.getElementById('selectFileBtn').addEventListener('click', async () => {
   }
 });
 
-// 🔁 Prompt function
+
+// Prompt function
 function showPrompt() {
     const goToGen = confirm("Invalid key format.\nWould you like to go to the Key Generation page?");
     if (goToGen) {

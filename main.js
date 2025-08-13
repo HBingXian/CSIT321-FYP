@@ -3,7 +3,7 @@ const path = require('path');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-const crypto = require('crypto'); 
+const crypto = require('crypto'); //  Added crypto module
 const { dialog } = require('electron');
 const { encryptFile } = require('./js/file_encrypt');
 const { decryptFile } = require('./js/file_decrypt');
@@ -261,6 +261,7 @@ ipcMain.on('navigate-to-decrypt-page', () => {
 });
 
 // Handle Encrypt & Upload request
+/*
 ipcMain.on('request-encrypt-upload', async () => {
     if (!currentUser) {
         console.log('User not logged in');
@@ -284,8 +285,7 @@ ipcMain.on('request-encrypt-upload', async () => {
 
     // TODO: Add upload to cloud step here if needed  
 });
-//SuperBad123*
-//tOhWYxBWEAAHFNoYzgaRCUo7EoTCFfvwY0DjLGrfXmA=
+*/
 
 // Handle Download & Decrypt request
 ipcMain.on('request-download-decrypt', async () => {
@@ -383,10 +383,7 @@ ipcMain.on('generate-random-key', (event) => {
   logAction(currentUser, 'key_generation', 'Random encryption key was generated.');
 });
 
-
-//Superbad123!
-//eMIAjg1Yx1Ub9ve4HisjKPlKjKNqQlmwnIBsLFxobPw=
-//handler to encrypt with manual key input
+/* ---------- old encryption code ---------- 
 ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
   if (canceled || filePaths.length === 0) return;
@@ -406,6 +403,32 @@ ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
     event.sender.send('encryption-done', 'Encryption failed.');
   }
 });
+*/
+
+//new encryption code with description
+ipcMain.on('encrypt-file-from-page', async (event, data) => {
+  const { key: encryptionKey, description } = data;
+
+  console.log('ENCRYPTION KEY TYPE:', typeof encryptionKey, encryptionKey); // Debug
+
+  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+  if (canceled || filePaths.length === 0) return;
+
+  const inputPath = filePaths[0];
+  const outputPath = inputPath + '_encrypted.dat';
+
+  try {
+    encryptFile(inputPath, outputPath, encryptionKey); // Make sure this is using the correct var
+    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
+
+    // Upload to Google Drive with description
+    uploadToDrive(outputPath, description);
+  } catch (err) {
+    console.error('Encryption or upload error:', err);
+    event.sender.send('encryption-done', 'Encryption failed.');
+  }
+});
+
 
 // Handle import key from JSON in the encrypt page
 ipcMain.handle('import-key-json', async () => {
