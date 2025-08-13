@@ -4,6 +4,10 @@ const axios = require('axios');
 
 const TOKEN_PATH = path.join(__dirname, '../.onedrive_token.json');
 
+function clearToken() {
+  try { if (fs.existsSync(TOKEN_PATH)) fs.unlinkSync(TOKEN_PATH); } catch {}
+}
+
 const CLIENT_ID = 'cca1ab0b-d9ac-49a7-888c-1ccb40568d6b';
 const CLIENT_SECRET = 'Zwl8Q~sefTJE3jQ50sAqBpFYMBg_cAcKRWn8PbmA';
 const REDIRECT_URI = 'http://localhost:3000/callback';
@@ -64,7 +68,8 @@ async function getValidAccessToken() {
   try {
     return await refreshAccessToken(tokenData.refresh_token);
   } catch (err) {
-    console.error('Token refresh failed:', err.message);
+    console.error('Token refresh failed:', err?.response?.data || err.message);
+    clearToken();
     return null;
   }
 }
@@ -73,6 +78,10 @@ async function getValidAccessToken() {
 async function uploadFileToOneDrive(accessToken, filePath) {
   const fileName = path.basename(filePath);
   const fileData = fs.readFileSync(filePath);
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Encrypted file not found: ${filePath}`);
+  }
 
   const response = await axios.put(
     `https://graph.microsoft.com/v1.0/me/drive/root:/${fileName}:/content`,

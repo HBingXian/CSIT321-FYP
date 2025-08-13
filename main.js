@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
@@ -97,6 +97,67 @@ ipcMain.handle('start-onedrive-upload', async (event) => {
 
 
   return { status: 'success', fileName: uploadResponse.name };
+});
+
+ipcMain.handle('upload-to-google-drive', async (event, filePath) => {
+  try {
+    await uploadFileToGoogleDrive(filePath); // your existing function
+    return { status: 'success' };
+  } catch (err) {
+    console.error('Google Drive Upload Error:', err);
+    return { status: 'error', message: err.message };
+  }
+});
+
+ipcMain.handle('encrypt-file-from-page-to', async (event, { encryptionKey, destination }) => {
+  try {
+    // 1) Let user choose source file (same as your manual flow)
+    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
+    if (canceled || filePaths.length === 0) return { status: 'cancelled' };
+
+    const inputPath = filePaths[0];
+    const outputPath = inputPath + '_encrypted.dat';
+
+    // 2) Encrypt with user-supplied key (same as your manual flow)
+    await encryptFile(inputPath, outputPath, encryptionKey);
+
+    // Ensure the file is really on disk before using it
+    let waited = 0;
+    while (!fs.existsSync(outputPath) && waited < 3000) {
+      await new Promise(r => setTimeout(r, 100));
+      waited += 100;
+    }
+    if (!fs.existsSync(outputPath)) {
+      return { status: 'error', message: 'Encrypted file was not created.' };
+    }
+
+    // 3) Destination routing
+    if (destination === 'local') {
+      return { status: 'local_only', message: 'Encrypted locally.' };
+    }
+
+    if (destination === 'google') {
+      await uploadToDrive(outputPath); // your existing function
+      return { status: 'success', message: 'Uploaded to Google Drive.' };
+    }
+
+    if (destination === 'onedrive') {
+      let accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        // Kick off login; user clicks again after auth
+        shell.openExternal(getAuthUrl());
+        return { status: 'auth_required' };
+      }
+      await uploadFileToOneDrive(accessToken, outputPath);
+      return { status: 'success', message: 'Uploaded to OneDrive.' };
+    }
+
+    // Fallback
+    return { status: 'error', message: 'Unknown destination.' };
+  } catch (err) {
+    console.error('encrypt-file-from-page-to error:', err);
+    return { status: 'error', message: err?.message || 'Unexpected error' };
+  }
 });
 
 // MySQL connection
@@ -346,6 +407,44 @@ ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
   }
 });
 
+// Handle import key from JSON in the encrypt page
+ipcMain.handle('import-key-json', async () => {
+  try {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Select key JSON file',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (canceled || !filePaths || filePaths.length === 0) {
+      return { status: 'cancelled' };
+    }
+
+    const raw = fs.readFileSync(filePaths[0], 'utf8');
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      return { status: 'error', message: 'Invalid JSON file.' };
+    }
+
+    // Accept common field names, but your generator uses "encryptionKey"
+    const key = data.encryptionKey || data.key || data.encryption_key;
+
+    if (!key || typeof key !== 'string') {
+      return { status: 'error', message: 'No "encryptionKey" found in JSON.' };
+    }
+
+    // (Optional) quick sanity check that it’s base64
+    try { Buffer.from(key, 'base64'); } catch {
+      return { status: 'error', message: 'Key in JSON is not valid Base64.' };
+    }
+
+    return { status: 'success', key };
+  } catch (err) {
+    console.error('import-key-json error:', err);
+    return { status: 'error', message: err.message || 'Unexpected error' };
+  }
+});
 
 ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
     const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
