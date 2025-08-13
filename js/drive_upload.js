@@ -72,7 +72,6 @@ async function ensureAppFolderExists(drive) {
   return folder.data.id;
 }
 
-
 async function uploadFile(auth, filePath) {
   const drive = google.drive({ version: 'v3', auth });
   const folderId = await ensureAppFolderExists(drive); // Ensure folder
@@ -101,7 +100,6 @@ async function uploadFile(auth, filePath) {
     console.error('Upload error:', err);
   }
 }
-
 
 // Public function to use from main.js
 function uploadToDrive(filePath) {
