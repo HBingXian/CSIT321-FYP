@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Files</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-title">Manage Files</div>
+    <button class="home-btn" onclick="window.location.href='dashboard.html'">Dashboard</button>
+  </header>
+
+  <main class="container">
+    <section>
+      <h3>Search Files</h3>
+      <input type="text" id="searchInput" placeholder="Search by name...">
+      <button onclick="searchFiles()">Search</button>
+    </section>
+
+    <section>
+      <h3>All Files</h3>
+      <table id="fileTable">
+        <thead>
+          <tr>
+            <th>File Name</th>
+            <th>Size (KB)</th>
+            <th>Modification Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="fileTableBody">
+          <!-- Populated dynamically -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 SecureCloud. All rights reserved.
+  </footer>
+
+  <script src="../js/view_file.js"></script>
+  <script src="../js/delete_file.js"></script>
+  <script src="C:/Users/MSI/Documents/GitHub/CSIT321-FYP/js/share_file.js"></script>
+
+  <script src="../js/test_log.js"></script>
+</body>
+</html>
