@@ -27,6 +27,19 @@ ipcMain.handle('oauth:google', async () => {
   }
 });
 
+function suggestDecryptedName(name) {
+  const fallback = 'file_encrypted.dat';
+  let base = (name && typeof name === 'string') ? name : fallback;
+  if (base.toLowerCase().endsWith('_encrypted.dat')) {
+    base = base.slice(0, -'_encrypted.dat'.length); // strip the encryption suffix
+  }
+  const dot = base.lastIndexOf('.');
+  if (dot > 0) {
+    return `${base.slice(0, dot)}_decrypted${base.slice(dot)}`; // name_decrypted.ext
+  }
+  return `${base}_decrypted`; // no extension case
+}
+
 const { getAccessToken, getValidAccessToken, uploadFileToOneDrive, clearOneDriveToken } = require('./js/onedrive_upload');
 const { getAuthUrl } = require('./scripts/init_onedrive_token');
 const express = require('express');
@@ -225,12 +238,13 @@ ipcMain.handle('download-and-decrypt', async (_event, { provider, fileId, fileNa
       });
     }
 
-    const suggested =
-      (fileName || 'file_encrypted.dat').replace(/_encrypted\.dat$/i, '') + '_decrypted';
+    //////////////////////////////////////////////////
+    const suggested = suggestDecryptedName(fileName);
     const { canceled, filePath } = await dialog.showSaveDialog({
-      title: 'Save Decrypted File As',
-      defaultPath: suggested
+    title: 'Save Decrypted File As',
+    defaultPath: suggested
     });
+
     if (canceled || !filePath) return { status: 'cancelled' };
 
     await decryptFile(tmpEncrypted, filePath, base64Key);
@@ -250,7 +264,7 @@ ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
 
   const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog({
     title: 'Save Decrypted File As',
-    defaultPath: encryptedPath.replace('_encrypted.dat', '_decrypted.txt'),
+    defaultPath: suggestDecryptedName(path.basename(encryptedPath)),
     buttonLabel: 'Save Decrypted File'
   });
   if (saveCanceled || !savePath) return;
