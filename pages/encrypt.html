@@ -5,29 +5,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="header">
-        <div class="header-title">CrypterHelper</div>
-        <button class="home-btm" id="homeBtn">Back to Dashboard</button>
-    </div>
-    <main>
-         <h2>Encrypt a File</h2>
-  <label for="encryptionKeyInput">Enter your Encryption Key:</label><br>
-  <input type="text" id="encryptionKeyInput" placeholder="Base64 key..." size="60">
-  <input type="text" id="fileDescriptionInput" placeholder="Enter file description (CSV-style)">
-  <label for="uploadDest" style="display:block;margin-top:8px;">Upload To</label>
-  <select id="uploadDest">
-    <option value="google" selected>Google Drive</option>
-    <option value="onedrive">OneDrive</option>
-    <option value="local">Encrypt only (no upload)</option>
-  </select>
-  <br><br>
+  <div class="header">
+    <div class="header-title">CrypterHelper</div>
+    <button class="home-btm" id="homeBtn">Back to Dashboard</button>
+  </div>
 
-  <button id="selectFileBtn">Select File to Encrypt</button>
-  <button id="importKeyBtn">Import Key from JSON</button>
-  
-  <div id="result"></div>
-    </main>
- 
+  <main>
+    <h2>Encrypt a File</h2>
+
+    <label for="encryptionKeyInput">Enter your Encryption Key:</label><br>
+    <input type="text" id="encryptionKeyInput" placeholder="Base64 key..." size="60"><br><br>
+
+    <label for="fileDescriptionInput">File Description (for Google Drive only):</label><br>
+    <input type="text" id="fileDescriptionInput" placeholder="Optional description..." size="60"><br><br>
+
+    <label for="uploadDest">Upload Destination:</label><br>
+    <select id="uploadDest">
+      <option value="google">Google Drive</option>
+      <option value="onedrive">OneDrive</option>
+      <option value="local">Save Locally Only</option>
+    </select><br><br>
+
+    <button id="selectFileBtn">Select File to Encrypt</button>
+    <button id="importKeyBtn">Import Key from JSON</button>
+
+    <div id="result" style="margin-top: 20px; color: green;"></div>
+  </main>
 
   <script src="../js/encrypt_page.js"></script>
 </body>

@@ -1,4 +1,4 @@
-console.log("✅ share_file.js loaded");
+console.log(" share_file.js loaded");
 
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('share-btn')) {
@@ -13,6 +13,6 @@ document.addEventListener('click', (e) => {
 });
 
 window.ipcRenderer.on('share-link-ready', (e, { fileId, link }) => {
-  alert(`✅ File is now public!\nShare link:\n${link}`);
+  alert(` File is now public!\nShare link:\n${link}`);
 });
 

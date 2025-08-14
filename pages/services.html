@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cloud Connections</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    main {
+      padding: 20px;
+    }
+
+    .cloud-service {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .cloud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cloud-name {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    .status {
+      font-size: 0.95em;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.95em;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .connect-btn {
+      background-color: #1a73e8;
+      color: white;
+    }
+
+    .connect-btn:hover {
+      background-color: #0c5ed7;
+    }
+
+    .disconnect-btn {
+      background-color: #d93025;
+      color: white;
+    }
+
+    .disconnect-btn:hover {
+      background-color: #b1271b;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-title">CrypterHelper</div>
+    <button class="home-btn" onclick="window.location.href='dashboard.html'">Dashboard</button>
+  </header>
+
+  <main class="container">
+    <section>
+      <h3>Manage Cloud Connections</h3>
+
+      <div class="cloud-service">
+        <div class="cloud-header">
+          <div class="cloud-name">Google Drive</div>
+          <div>
+            <button id="googleConnectBtn" class="btn connect-btn">Connect</button>
+            <button id="googleDisconnectBtn" class="btn disconnect-btn" style="display: none;">Disconnect</button>
+          </div>
+        </div>
+        <div class="status" id="googleStatus">Checking connection...</div>
+      </div>
+            <!-- OneDrive -->
+      <div class="cloud-service">
+        <div class="cloud-header">
+          <div class="cloud-name">Microsoft OneDrive</div>
+          <div>
+            <button id="onedriveConnectBtn" class="btn connect-btn">Connect</button>
+            <button id="onedriveDisconnectBtn" class="btn disconnect-btn" style="display: none;">Disconnect</button>
+          </div>
+        </div>
+        <div class="status" id="onedriveStatus">Checking connection...</div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>© 2025 CrypterHelper</footer>
+
+  <script src="../js/services.js"></script>
+</body>
+</html>

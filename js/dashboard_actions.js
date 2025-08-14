@@ -20,19 +20,9 @@ safeAddListener('generateKeyBtn', 'click', () => {
   ipcRenderer.send('navigate-to-gen-key');
 });
 
-// Navigate to rec_key.html
-safeAddListener('recoverKeyBtn', 'click', () => {
-  ipcRenderer.send('navigate-to-rec-key');
-});
-
 // Navigate to encryption page
 safeAddListener('goToEncryptPageBtn', 'click', () => {
   ipcRenderer.send('navigate-to-encrypt-page');
-});
-
-// Navigate to decryption page
-safeAddListener('goToDecryptPageBtn', 'click', () => {
-  ipcRenderer.send('navigate-to-decrypt-page');
 });
 
 // Navigate to file manager
@@ -40,22 +30,8 @@ safeAddListener('manageFilesBtn', 'click', () => {
   ipcRenderer.send('navigate-to-files');
 });
 
-// Download & Decrypt
-safeAddListener('downloadDecryptBtn', 'click', () => {
-  ipcRenderer.send('request-download-decrypt');
+// Navigate to connections page
+safeAddListener('connectionsBtn', 'click', () => {
+  ipcRenderer.send('navigate-to-services');
 });
 
-// Onedrive upload
-//async function uploadToOneDrive() {
-// const result = await ipcRenderer.invoke('start-onedrive-upload');
-
-//  if (result.status === 'auth_required') {
-//    alert('Please log in to OneDrive in your browser and return.');
-//  } else if (result.status === 'success') {
-//    alert(`Encrypted file uploaded as ${result.fileName}`);
-//  } else if (result.status === 'cancelled') {
-//   alert('Upload cancelled.');
-//  } else {
-//    alert('An error occurred.');
-//  }
-//}

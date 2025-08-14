@@ -20,6 +20,7 @@
     "electron": "^36.7.4"
   },
   "dependencies": {
+    "@azure/msal-node": "^3.7.0",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
     "boolean": "^3.2.0",
@@ -33,6 +34,7 @@
     "define-data-property": "^1.1.4",
     "define-properties": "^1.2.1",
     "detect-node": "^2.1.0",
+    "electron-store": "^10.1.0",
     "end-of-stream": "^1.4.4",
     "env-paths": "^2.2.1",
     "es-define-property": "^1.0.1",
@@ -57,6 +59,7 @@
     "json-buffer": "^3.0.1",
     "json-stringify-safe": "^5.0.1",
     "jsonfile": "^4.0.0",
+    "keytar": "^7.9.0",
     "keyv": "^4.5.4",
     "lowercase-keys": "^2.0.0",
     "matcher": "^3.0.0",

@@ -1,86 +1,61 @@
+// js/drive_upload.js
+const { google } = require('googleapis');
+
 // This module handles uploading files to Google Drive.
 // It uses the Google Drive API and requires OAuth2 authentication.
 // Make sure to have 'credentials.json' in the same directory as this file.
+
 const fs = require('fs');
 const path = require('path');
-const { google } = require('googleapis');
-const open = require('open');
 
-const TOKEN_PATH = path.join(__dirname, 'token.json'); // will be created after login
+const FOLDER_NAME = 'CrypterHelperUploads';
+const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
-function authorize(callback) {
-  const credentials = JSON.parse(fs.readFileSync(path.join(__dirname, '../credentials.json')));
-  const { client_secret, client_id, redirect_uris } = credentials.installed;
-
-  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-
-  // Check for existing token
-  if (fs.existsSync(TOKEN_PATH)) {
-    const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
-    oAuth2Client.setCredentials(token);
-    callback(oAuth2Client);
-  } else {
-    const authUrl = oAuth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/drive.file'],
-    });
-
-    // Open browser for login
-    open(authUrl);
-    console.log('Authorize this app and paste the code below.');
-
-    // Prompt user to paste code
-    const readline = require('readline').createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    readline.question('Enter the code from that page here: ', (code) => {
-      readline.close();
-      oAuth2Client.getToken(code, (err, token) => {
-        if (err) return console.error('Error retrieving access token', err);
-        oAuth2Client.setCredentials(token);
-        fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
-        callback(oAuth2Client);
-      });
-    });
-  }
-}
-
-async function ensureAppFolderExists(drive) {
-  const res = await drive.files.list({
-    q: "name = 'CrypterHelperUploads' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
-    fields: 'files(id)',
-    spaces: 'drive',
+/**
+ * Ensure a folder named CrypterHelperUploads exists in the user's My Drive root.
+ * Returns the folderId.
+ */
+async function ensureUploadFolder(drive) {
+  // Look for an existing folder in the root named CrypterHelperUploads
+  const { data } = await drive.files.list({
+    q: [
+      `name='${FOLDER_NAME}'`,
+      `mimeType='${FOLDER_MIME}'`,
+      `'root' in parents`,
+      'trashed=false'
+    ].join(' and '),
+    fields: 'files(id, name)',
+    pageSize: 1,
+    // If you later need Shared Drives, add: includeItemsFromAllDrives: true, supportsAllDrives: true
   });
 
-  if (res.data.files.length > 0) {
-    return res.data.files[0].id;
+  if (data.files && data.files.length > 0) {
+    return data.files[0].id;
   }
 
-  // Folder doesn't exist, create it
-  const folderMetadata = {
-    name: 'CrypterHelperUploads',
-    mimeType: 'application/vnd.google-apps.folder',
-  };
-
-  const folder = await drive.files.create({
-    resource: folderMetadata,
-    fields: 'id',
+  // Create the folder in the root if not found
+  const createRes = await drive.files.create({
+    requestBody: {
+      name: FOLDER_NAME,
+      mimeType: FOLDER_MIME,
+      parents: ['root'],
+    },
+    fields: 'id, name',
   });
 
-  return folder.data.id;
+  return createRes.data.id;
 }
 
-async function uploadFile(auth, filePath, description) {
-
+async function uploadToDrive(filePath, description, auth) {
   const drive = google.drive({ version: 'v3', auth });
-  const folderId = await ensureAppFolderExists(drive);
+
+  // Ensure destination folder exists (or create it)
+  const folderId = await ensureUploadFolder(drive);
 
   const fileMetadata = {
     name: path.basename(filePath),
-    parents: [folderId],
-    description: description || '', // use empty string if undefined
+    description: description || '',
+    parents: [folderId], // <-- upload into CrypterHelperUploads
   };
 
   const media = {
@@ -88,26 +63,14 @@ async function uploadFile(auth, filePath, description) {
     body: fs.createReadStream(filePath),
   };
 
-  try {
-    const file = await drive.files.create({
-      resource: fileMetadata,
-      media: media,
-      fields: 'id, description',
-    });
+  const res = await drive.files.create({
+    requestBody: fileMetadata,
+    media,
+    fields: 'id, parents',
+  });
 
-    console.log(`File uploaded to CrypterHelperUploads. File ID: ${file.data.id}`);
-    if (description) console.log(`Description: ${description}`);
-  } catch (err) {
-    console.error('Upload error:', err);
-  }
-}
-
-// Public function to use from main.js
-function uploadToDrive(filePath,  description = '') {
-    console.log("uploadToDrive() called with:", filePath, description);  // Add this
-  authorize(async (auth) => {
-  await uploadFile(auth, filePath, description);
-});
+  console.log('Uploaded file ID:', res.data.id, '→ folder:', folderId);
+  return res.data.id;
 }
 
 module.exports = { uploadToDrive };
