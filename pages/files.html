@@ -15,8 +15,18 @@
   <main class="container">
     <section>
       <h3>Search Files</h3>
-      <input type="text" id="searchInput" placeholder="Search by name...">
-      <button onclick="searchFiles()">Search</button>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="searchInput" placeholder="Search by name...">
+        <button onclick="searchFiles()">Search</button>
+
+        <label for="providerSelect" style="margin-left:12px;">Source:</label>
+        <select id="providerSelect">
+          <option value="google" selected>Google Drive</option>
+          <option value="onedrive">OneDrive</option>
+        </select>
+
+        <button id="refreshFilesBtn" type="button">Refresh</button>
+      </div>
     </section>
 
     <section>
@@ -25,7 +35,7 @@
         <thead>
           <tr>
             <th>File Name</th>
-            <th>Size (KB)</th>
+            <th>Size</th>
             <th>Modification Date</th>
             <th>Actions</th>
           </tr>
@@ -41,9 +51,6 @@
 
   <script src="../js/view_file.js"></script>
   <script src="../js/delete_file.js"></script>
-  <script src="C:/Users/MSI/Documents/GitHub/CSIT321-FYP/js/share_file.js"></script>
-
-  <script src="../js/test_log.js"></script>
-    <script src="../js/search_file.js"></script>
+  <script src="../js/search_file.js"></script>
 </body>
 </html>
