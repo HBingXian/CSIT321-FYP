@@ -24,11 +24,6 @@ const { getAccessToken, getValidAccessToken, uploadFileToOneDrive } = require('.
 const { getAuthUrl } = require('./scripts/init_onedrive_token');
 const express = require('express');
 
-const express = require('express');
-const { getAccessToken } = require('./js/onedrive_upload');
-const { getValidAccessToken, uploadFileToOneDrive } = require('./js/onedrive_upload');
-const { getAuthUrl } = require('./scripts/init_onedrive_token');
-
 let mainWindow;
 let currentUser = null; // Track the currently logged-in user
 let currentEncryptionKey = null;//same 
