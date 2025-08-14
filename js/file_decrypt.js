@@ -1,3 +1,8 @@
+//deprecated
+// File: js/file_encrypt.js
+// This script handles file decryption functionality in an Electron app
+// It reads an encrypted file, decrypts it using AES-256-GCM, and saves the decrypted content to a new file.
+// It expects the encrypted file to have a specific format: IV at the start, ciphertext in the middle, and authentication tag at the end.
 
 const fs = require('fs');
 const crypto = require('crypto');

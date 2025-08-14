@@ -24,6 +24,11 @@ const { getAccessToken, getValidAccessToken, uploadFileToOneDrive } = require('.
 const { getAuthUrl } = require('./scripts/init_onedrive_token');
 const express = require('express');
 
+const express = require('express');
+const { getAccessToken } = require('./js/onedrive_upload');
+const { getValidAccessToken, uploadFileToOneDrive } = require('./js/onedrive_upload');
+const { getAuthUrl } = require('./scripts/init_onedrive_token');
+
 let mainWindow;
 let currentUser = null; // Track the currently logged-in user
 let currentEncryptionKey = null;//same 
@@ -138,7 +143,9 @@ ipcMain.on('login-attempt', (event, { username, password }) => {
       if (!isMatch) {
         event.reply('login-response', { success: false, error: 'Invalid password' });
       } else {
+
         currentUser = user.username; //  Set the logged-in user
+
         event.reply('login-response', { success: true, user: user.username });
         mainWindow.loadFile('pages/dashboard.html');
       }
@@ -158,15 +165,6 @@ ipcMain.on('logout-request', () => {
 ipcMain.on('navigate-to-gen-key', () => {
   if (mainWindow) {
     mainWindow.loadFile('pages/gen_key.html').then(() => {
-      mainWindow.focus();
-    });
-  }
-});
-
-// Navigate to key recovery
-ipcMain.on('navigate-to-rec-key', () => {
-  if (mainWindow) {
-    mainWindow.loadFile('pages/rec_key.html').then(() => {
       mainWindow.focus();
     });
   }
@@ -205,7 +203,7 @@ ipcMain.on('request-encrypt-upload', async () => {
     }
 
     if (!currentEncryptionKey) {
-        console.log('Encryption key not ready. Generate or recover your key first.');
+        console.log('Encryption key not ready. Generate your key first.');
         return;
     }
 
@@ -215,7 +213,7 @@ ipcMain.on('request-encrypt-upload', async () => {
     const inputPath = filePaths[0];
     const outputPath = inputPath + '_encrypted.dat';
 
-    // You need to have the encryptionKey available (ensure it's stored after key generation or recovery)
+    // You need to have the encryptionKey available (ensure it's stored after key generation)
     // Example assuming you store the key globally as currentEncryptionKey:
     encryptFile(inputPath, outputPath, currentEncryptionKey);
 
@@ -308,7 +306,6 @@ ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
 });
 
 
-
 // Handle key generation
 ipcMain.on('generate-key', (event, passphrase) => {
   if (!currentUser) {
@@ -316,115 +313,62 @@ ipcMain.on('generate-key', (event, passphrase) => {
     return;
   }
 
-  // Retrieve salt from the database for the current user
-  const sql = 'SELECT kdf_salt FROM users WHERE username = ?';
-  db.query(sql, [currentUser], (err, results) => {
-    if (err || results.length === 0) {
-      console.error('Error retrieving salt:', err);
-      event.reply('key-status', { message: 'Error retrieving salt' });
-      return;
-    }
+// Generate new random salt
+const newSalt = crypto.randomBytes(32);
+const hexSalt = newSalt.toString('hex');
 
-    const salt = Buffer.from(results[0].kdf_salt, 'hex');
-    const iterations = 100000;
-    const keyLength = 32;
-    const digest = 'sha256';
+// Update salt in the database
+const updateSaltSQL = 'UPDATE users SET kdf_salt = ? WHERE username = ?';
+db.query(updateSaltSQL, [hexSalt, currentUser], (err) => {
+  if (err) {
+    console.error('Error updating salt:', err);
+    event.reply('key-status', { message: 'Error updating salt' });
+    return;
+  }
 
-    // Hash the passphrase using PBKDF2 and the retrieved salt
-    crypto.pbkdf2(passphrase, salt, iterations, keyLength, digest, (err, derivedKey) => {
-      if (err) {
-        console.error('Error deriving key:', err);
-        return event.reply('key-status', { message: 'Error generating key' });
-      }
-
-      // Store the hashed passphrase in the database
-      bcrypt.hash(passphrase, 10, (err, hashedPassphrase) => {
-        if (err) {
-          console.error('Error hashing passphrase:', err);
-          return event.reply('key-status', { message: 'Error hashing passphrase' });
-        }
-
-        const sql = 'UPDATE users SET passphrase_hash = ? WHERE username = ?';
-        db.query(sql, [hashedPassphrase, currentUser], (err) => {
-          if (err) {
-            console.error('DB error:', err);
-            event.reply('key-status', { message: 'Error storing passphrase hash' });
-            return;
-          }
-
-          const encryptionKey = derivedKey.toString('base64'); // Store encryption key
-          currentEncryptionKey = encryptionKey;  // ✔ Store globally for later use
-          event.reply('key-status', {
-            message: 'Encryption key generated successfully. Please backup your key!',
-            encryptionKey
-          });
-          
-          // Logging for key generation
-          logAction(currentUser, 'key_generation', 'Encryption key was generated successfully.');
-        });
-      });
-    });
-  });
-});
-
-// Handle key recovery
-ipcMain.on('recover-key', (event, { username, password, passphrase }) => {
-  const sql = 'SELECT * FROM users WHERE username = ?';
-  db.query(sql, [username], (err, results) => {
+  // Proceed to derive key using PBKDF2 with the new salt
+  crypto.pbkdf2(passphrase, newSalt, 600000, 32, 'sha256', (err, derivedKey) => {
     if (err) {
-      console.error('DB error:', err);
-      event.reply('recover-status', { success: false, message: 'Database error' });
-      return;
+      console.error('Error deriving key:', err);
+      return event.reply('key-status', { message: 'Error generating key' });
     }
 
-    if (results.length === 0) {
-      event.reply('recover-status', { success: false, message: 'User not found' });
-      return;
-    }
+    const encryptionKey = derivedKey.toString('base64');
+    currentEncryptionKey = encryptionKey;
 
-    const user = results[0];
-
-    // Compare entered password with stored password hash
-    bcrypt.compare(password, user.password_hash, (err, isPasswordMatch) => {
-      if (err || !isPasswordMatch) {
-        return event.reply('recover-status', { success: false, message: 'Invalid password' });
-      }
-
-      // Compare entered passphrase with stored passphrase hash
-      bcrypt.compare(passphrase, user.passphrase_hash, (err, isPassphraseMatch) => {
-        if (err || !isPassphraseMatch) {
-          return event.reply('recover-status', { success: false, message: 'Invalid passphrase' });
-        }
-
-        // Retrieve salt for key generation
-        const salt = Buffer.from(user.kdf_salt, 'hex');
-        const iterations = 100000;
-        const keyLength = 32;
-        const digest = 'sha256';
-
-        // Generate encryption key using PBKDF2
-        crypto.pbkdf2(passphrase, salt, iterations, keyLength, digest, (err, derivedKey) => {
-          if (err) {
-            console.error('Error deriving key:', err);
-            return event.reply('recover-status', { success: false, message: 'Error deriving key' });
-          }
-
-          const encryptionKey = derivedKey.toString('base64');
-          currentEncryptionKey = encryptionKey;  // ✔ Store globally for later use
-          // Logging for key recovery
-          logAction(username, 'key_recovery', 'Encryption key was recovered successfully.');
-          
-          event.reply('recover-status', {
-            success: true,
-            message: 'Encryption key recovered successfully',
-            encryptionKey
-          });
-        });
-      });
+    event.reply('key-status', {
+      message: 'New encryption key generated successfully. Please backup your key!',
+      encryptionKey
     });
+
+    logAction(currentUser, 'key_generation', 'New encryption key and salt generated.');
   });
 });
+});
 
+// Handle random key generation
+ipcMain.on('generate-random-key', (event) => {
+  if (!currentUser) {
+    event.reply('key-status', { message: 'No user logged in' });
+    return;
+  }
+
+  //Generate 32-byte random key
+  const randomKey = crypto.randomBytes(32);
+  const base64Key = randomKey.toString('base64');
+
+  //Store in memory
+  currentEncryptionKey = base64Key;
+
+  //Send response back to frontend
+  event.reply('key-status', {
+    message: 'Random encryption key generated successfully. Please back it up!',
+    encryptionKey: base64Key
+  });
+
+  //Log the action (optional)
+  logAction(currentUser, 'key_generation', 'Random encryption key was generated.');
+});
 
 /* ---------- old encryption code ---------- 
 ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {

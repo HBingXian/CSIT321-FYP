@@ -5,26 +5,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="header">
-        <div class="header-title">CrypterHelper</div>
-        <button class="home-btm" id="homeBtn">Back to Dashboard</button>
-    </div>
+  <div class="header">
+    <div class="header-title">CrypterHelper</div>
+    <button class="home-btm" id="homeBtn">Back to Dashboard</button>
+  </div>
+
   <main>
     <h2>Generate Encryption Key</h2>
     <form id="keyForm">
       <label for="passphrase">Enter Passphrase:</label>
       <input type="text" id="passphrase" name="passphrase" placeholder="Enter the passphrase here" required>
-      <p><b>Please use a passphrase that is atleast 12 characters long with a mix of uppercase, lowercase letters, symbols and numbers.</b></p>
+      <p><b>Please use a passphrase that is at least 12 characters long with a mix of uppercase, lowercase letters, symbols and numbers.</b></p>
       <br>
       <p><b>Refer to the Educational Materials on our website for more information on creating passwords.</b></p>
       <br>
-      <button type="submit">Generate Key</button>
+      <div class="button-group">
+        <button type="submit">Generate Key</button>
+        <button type="button" id="randomKeyBtn">Generate Key Randomly</button>
+      </div>
     </form>
     <div id="result"></div>
+    <button id="downloadKeyBtn" style="display: none;">Download Key (json)</button>
   </main>  
+
   <footer>© 2025 CrypterHelper</footer>
 
-  <!--js for page-->
+  <!-- JS -->
   <script src="../js/gen_key.js"></script>
   <script src="main.js"></script>
   <script>
