@@ -1,0 +1,351 @@
+[33mcommit 1311364e36fcc21a8c708a931ffb522b9e9953aa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mlast-working[m[33m, [m[1;31morigin/last-working[m[33m)[m
+Merge: 43c7579 856d86b
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Thu Aug 14 18:30:25 2025 +0800
+
+    Merge branch 'Integration---Testing' into last-working
+
+[33mcommit 43c75791dfe00e0124cc4ad01eabb04e5ed5c276[m
+Author: humbledogz <heinhtetzaw8575939@gmail.com>
+Date:   Thu Aug 14 15:22:41 2025 +0800
+
+    just left decrypt for onedrive
+
+[33mcommit 856d86b09c7dc7a3e25fd343c9a862a46232ef0e[m[33m ([m[1;31morigin/Integration[m[33m, [m[1;32mIntegration[m[33m)[m
+Merge: 6632ac8 0c3f0ec
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:32:57 2025 +0800
+
+    Merge pull request #7 from HBingXian/onedrive-upload
+    
+    Onedrive upload - Integration
+
+[33mcommit 0c3f0ec4187cbe0c6c7f56655df2eb8c59e8b5e4[m[33m ([m[1;31morigin/onedrive-upload[m[33m)[m
+Merge: 3b8336f 6632ac8
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:32:49 2025 +0800
+
+    Merge branch 'Integration' into onedrive-upload
+
+[33mcommit 6632ac834430b6c80664341506549bcf56dbf0d2[m
+Merge: 616879b 792183c
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:25:48 2025 +0800
+
+    Merge pull request #6 from HBingXian/add-description-feature
+    
+    Add description feature - Integration
+
+[33mcommit 792183cdf2e46b9816059fd258a448df98daad84[m[33m ([m[1;31morigin/add-description-feature[m[33m)[m
+Merge: 057505b 616879b
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:25:40 2025 +0800
+
+    Merge branch 'Integration' into add-description-feature
+
+[33mcommit 616879b2fb905d7153d2ef2137829e5c2bd5aed6[m
+Merge: 1eddf4f c4f352f
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:18:01 2025 +0800
+
+    Merge pull request #5 from HBingXian/cleaning-up-code
+    
+    Cleaning up code - Integration
+
+[33mcommit c4f352f10d196f3b61bd2f4645423ff8350a8112[m[33m ([m[1;31morigin/cleaning-up-code[m[33m)[m
+Merge: 2b30b7e 1eddf4f
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:17:41 2025 +0800
+
+    Merge branch 'Integration' into cleaning-up-code
+
+[33mcommit 1eddf4f5a03fba2e4fa4c3a3b67e0352cff8e189[m
+Merge: 9dd48b2 31a7355
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:06:22 2025 +0800
+
+    Merge pull request #4 from HBingXian/updated-key-generation
+    
+    Updated key generation - Integration
+
+[33mcommit 9dd48b22a449cbcd49f03d7bca02f37995c88502[m
+Merge: ac842b8 a660fef
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:03:12 2025 +0800
+
+    Merge pull request #3 from HBingXian/backup-before-reset
+    
+    Backup before reset - Integration
+
+[33mcommit ac842b83d4f1fb0409cb88adb503a0ee32a511b0[m
+Merge: 7f0544e be89877
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 23:00:15 2025 +0800
+
+    Merge pull request #2 from HBingXian/feature-google-drive
+    
+    Feature google drive Integration
+
+[33mcommit be8987734aae4724a8a10aabcdcb9380edfef7f3[m[33m ([m[1;31morigin/feature-google-drive[m[33m)[m
+Merge: 577fd97 7f0544e
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Wed Aug 13 22:59:34 2025 +0800
+
+    Merge branch 'Integration' into feature-google-drive
+
+[33mcommit 529dc16bd087684f8d5ef1ba6d47e97867c61b79[m
+Author: humbledogz <heinhtetzaw8575939@gmail.com>
+Date:   Wed Aug 13 21:26:29 2025 +0800
+
+    cleaned
+
+[33mcommit 3b8336fb43a8d9cbeb7dc76db5b6ab6693341979[m
+Author: jordyyansen <Jordyyansen@gmail.com>
+Date:   Wed Aug 13 19:35:23 2025 +0800
+
+    File encryption merging
+    
+    - Merging of google drive upload and onedrive upload into one page
+    - Allow importing of json file for encryption key
+
+[33mcommit 056bf825dfd6de22ab5df929e9614b21f1125f84[m
+Merge: e9815eb c7da553
+Author: humbledogz <heinhtetzaw8575939@gmail.com>
+Date:   Sun Aug 10 06:30:29 2025 +0800
+
+    Merge branch 'added_file_management_page_(share,delete,decrypt)' of https://github.com/HBingXian/CSIT321-FYP into added_file_management_page_(share,delete,decrypt)
+
+[33mcommit e9815eb75a97af0f8559607b4f76e453f7b4398e[m
+Author: humbledogz <heinhtetzaw8575939@gmail.com>
+Date:   Sun Aug 10 06:30:08 2025 +0800
+
+    new auth
+
+[33mcommit c7da553baf0452a32d4d5729b395ddebc5d6c9e5[m
+Author: humbledogz <heinhtetzaw8575939@gmail.com>
+Date:   Sun Aug 10 06:19:53 2025 +0800
+
+    Update main.js
+
+[33mcommit a0a98d61e3ee6597bf083eb051f1400b96c15032[m
+Author: humbledogz <heinhtetzaw8575939@gmail.com>
+Date:   Wed Aug 6 09:20:37 2025 +0800
+
+    search-ggdrive
+
+[33mcommit 81c4496564cf09b67a79f7c84abc23fe2bc5314c[m
+Author: jordyyansen <167322445+jordyyansen@users.noreply.github.com>
+Date:   Tue Aug 5 18:40:59 2025 +0800
+
+    Onedrive Upload implementation
+
+[33mcommit 057505bfc3391a705c40118e73279d998d93dde5[m[33m ([m[1;32madd-description-feature[m[33m)[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Thu Jul 31 15:39:58 2025 +0800
+
+    updated file description, trying to fix bugs
+
+[33mcommit 0c899147780998fa6de4c6887bd3f7e03491a8e2[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Thu Jul 31 15:24:25 2025 +0800
+
+    QoL
+
+[33mcommit 05f0425642c2b8eaf58543b1542e1a8b343def76[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Thu Jul 31 14:17:44 2025 +0800
+
+    Added file description feature
+
+[33mcommit 2b30b7e925d57b89b93cee0faca24864560502bc[m[33m ([m[1;32mcleaning-up-code[m[33m)[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Thu Jul 31 13:48:35 2025 +0800
+
+    save before deleting all unused code
+
+[33mcommit d16c3dc6ddc9ba8605b0d46f8ad0c5597ee5a307[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Tue Jul 8 18:59:43 2025 +0800
+
+    Refactor event listener handling in dashboard_actions.js and clean up deprecated code in main.js and dashboard.htm
+
+[33mcommit cf39ab6eb63c8decc7726dcdcd2806af55f2cad1[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Tue Jul 8 18:21:30 2025 +0800
+
+    trying to clean up code
+
+[33mcommit 31a7355fc3a0be53d5cb7c5468bbd89a4f06de4b[m[33m ([m[1;31morigin/updated-key-generation[m[33m)[m
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Tue Jun 24 15:42:24 2025 +0800
+
+    Updated Key Generation, Added random key generation, exporting/downloading key (json), removed key recovery
+
+[33mcommit 13152245680c07b72a2b41c23736b4b1690e54b1[m[33m ([m[1;32madded_file_management_page[m[33m)[m
+Author: humbledogz <heinhtetzaw8575939@gmail.com>
+Date:   Sat Jun 14 01:08:44 2025 +0800
+
+    augustus
+
+[33mcommit a660fef8973369863011a6db0ea93852a1e6b11a[m[33m ([m[1;31morigin/backup-before-reset[m[33m)[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Wed May 28 11:41:37 2025 +0800
+
+    Updated gitignore
+
+[33mcommit 1146b78cf58d6c1ec95dc9b0762705f10bb3f742[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Wed May 28 11:32:04 2025 +0800
+
+    Updated gitignore, working decryption with upload to cloud. decryption from cloud not finished
+
+[33mcommit 5ef1fa3b9d373e212f9cc4d4b5a8cdbe32516ac9[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Wed May 28 11:30:03 2025 +0800
+
+    Updated gitignore, working decryption with upload to cloud. decryption from cloud not finished
+
+[33mcommit 4f3d7ff5f440d8304aa2fdd9670285a744f637aa[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Sun May 25 21:17:16 2025 +0800
+
+    working prototype **without the cloud decrypt
+
+[33mcommit 577fd97ada7b10f38b0f0a8657d8c4258944dca5[m[33m ([m[1;32mfeature-file-encryption[m[33m)[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Tue May 20 16:41:48 2025 +0800
+
+    Integrated Google Drive upload and activity logging
+
+[33mcommit 7f0544e7f0f7c3c476cf765f5e60fa0e1a114358[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: d22d162 a092bbf
+Author: Jet-Coaster <116156684+Jet-Coaster@users.noreply.github.com>
+Date:   Tue May 20 15:39:16 2025 +0800
+
+    Merge pull request #1 from HBingXian/feature-file-encryption
+    
+    added functionality for file encryption and decryption (manual key entry)
+    added functionality for file encryption and decryption (store key in local variable)
+    added functionality for file encryption and decryption from local
+    integrated google 0auth API. credentials.json please contact kieron (Need it for the API to work, it is ignored when pushing to git for security reasons)
+    able to upload encrypted file in root google drive volder
+    
+    Next step:
+    logging for server
+    decryption functionality from google drive folder seemless
+
+[33mcommit 502ea778a8037a8ecbc10612fb0f68a13a8b0e34[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Tue May 20 13:42:44 2025 +0800
+
+    Removed secrets and updated .gitignore
+
+[33mcommit a092bbf0673ccb0ba303d6d813db2742dde2d3ee[m[33m ([m[1;31morigin/feature-file-encryption[m[33m)[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Tue May 20 13:42:44 2025 +0800
+
+    Removed secrets and updated .gitignore
+
+[33mcommit 0fff8adb419819a9bda2ad1b3b25da17a3695e90[m[33m ([m[1;32mfeature-google-drive[m[33m)[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Thu May 15 01:36:19 2025 +0800
+
+    Added file encryption, decryption with user input key **stored in global var(will change) and UI integration, currently decrypt not working will fix
+
+[33mcommit 4ca8bcfac8bd2c0ee06f7df276e6238a1b1df8a1[m
+Author: Kieron Tang <kierontangt@gmail.com>
+Date:   Thu May 15 01:36:19 2025 +0800
+
+    Added file encryption, decryption with user input key **stored in global var(will change) and UI integration, currently decrypt not working will fix
+
+[33mcommit d22d162e6d8c3f81b8b802d363dbbf88bf5d1dcd[m
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Sat May 3 17:03:34 2025 +0800
+
+    Added Login, Key generation, recovery and logging
+
+[33mcommit e06b26e0386f1712e55a8dfa0a4dde60a24a5ef9[m[33m ([m[1;32mmain[m[33m)[m
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Sat May 3 17:03:34 2025 +0800
+
+    Added Login, Key generation, recovery and logging
+
+[33mcommit 588b0bd810b672fa433541068568ddc4e2c2cb94[m
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Sat May 3 16:34:39 2025 +0800
+
+    Added Login, Key generation and Key recovery
+
+[33mcommit 8c080e4f7ef515cc653e9123273d4b35b7a087a5[m
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Sat May 3 16:34:39 2025 +0800
+
+    Added Login, Key generation and Key recovery
+
+[33mcommit ab27f9c89f4dd56539bc5089c4fe606098efde2d[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Wed Apr 30 14:38:34 2025 +0800
+
+    Update README.md
+
+[33mcommit a5cbe170f99a68dddb27c69b8121fdf818f8e570[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Wed Apr 30 14:38:34 2025 +0800
+
+    Update README.md
+
+[33mcommit fbcbbe92dfadf6013c69e5837588b68e321fed47[m
+Merge: 9e34cca 4814e0b
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Wed Apr 30 14:36:27 2025 +0800
+
+    Merge branch 'main' of https://github.com/HBingXian/CSIT321-FYP
+
+[33mcommit c362be82d033ce10638d6af2459e5d61d873677f[m
+Merge: 9e34cca ba07349
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Wed Apr 30 14:36:27 2025 +0800
+
+    Merge branch 'main' of https://github.com/HBingXian/CSIT321-FYP
+
+[33mcommit 9e34ccafc062508e754ecae159925df9627b8e51[m
+Author: HBingXian <derp.hbx@gmail.com>
+Date:   Wed Apr 30 14:32:39 2025 +0800
+
+    Initial Commit
+
+[33mcommit 4814e0b0fb5a521d85517bbe3ce334aca801e5e9[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Tue Apr 29 13:59:37 2025 +0800
+
+    Update README.md
+
+[33mcommit ba07349e359d163453761b6505789e8cf694aaa4[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Tue Apr 29 13:59:37 2025 +0800
+
+    Update README.md
+
+[33mcommit 2cfc526486ddbe45a04d64137182e100102fc384[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Tue Apr 29 13:59:09 2025 +0800
+
+    Update README.md
+
+[33mcommit d2b13405ce2bf70efc6ac51bdad9c50107833c96[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Tue Apr 29 13:59:09 2025 +0800
+
+    Update README.md
+
+[33mcommit 9bba39bb5619130fbe0d4e09c754350d6532f908[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Tue Apr 29 13:58:14 2025 +0800
+
+    Initial commit
+
+[33mcommit 97b47bba82799bde8093f65be0cefc2319862db5[m
+Author: Ho Bing Xian <77049489+HBingXian@users.noreply.github.com>
+Date:   Tue Apr 29 13:58:14 2025 +0800
+
+    Initial commit
