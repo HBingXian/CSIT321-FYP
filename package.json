@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+  "start": "electron .",
+  "package": "electron-packager . CrypterHelper --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/crypterhelper.ico"
   },
   "repository": {
     "type": "git",
