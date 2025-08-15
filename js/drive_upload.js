@@ -1,5 +1,10 @@
 // js/drive_upload.js
 const { google } = require('googleapis');
+
+// This module handles uploading files to Google Drive.
+// It uses the Google Drive API and requires OAuth2 authentication.
+// Make sure to have 'credentials.json' in the same directory as this file.
+
 const fs = require('fs');
 const path = require('path');
 

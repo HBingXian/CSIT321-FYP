@@ -1,4 +1,9 @@
-
+//old one ----------- to be ignored
+// File: js/file_encrypt.js
+// --- a/js/file_encrypt.js
+// +++ b/js/file_encrypt.js
+//
+// This script handles file encryption functionality in an Electron app
 const fs = require('fs');
 const crypto = require('crypto');
 

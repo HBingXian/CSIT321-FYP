@@ -1,29 +1,37 @@
 const { ipcRenderer } = require('electron');
 
+// Helper function to safely add event listeners
+function safeAddListener(id, event, handler) {
+  const element = document.getElementById(id);
+  if (element) {
+    element.addEventListener(event, handler);
+  } else {
+    console.warn(`Element with ID '${id}' not found.`);
+  }
+}
+
 // Logout functionality
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    ipcRenderer.send('logout-request');
+safeAddListener('logoutBtn', 'click', () => {
+  ipcRenderer.send('logout-request');
 });
 
-// Navigate to gen_key.html 
-document.getElementById('generateKeyBtn').addEventListener('click', () => {
-    ipcRenderer.send('navigate-to-gen-key');
+// Navigate to gen_key.html
+safeAddListener('generateKeyBtn', 'click', () => {
+  ipcRenderer.send('navigate-to-gen-key');
 });
 
-//navigate to encryption page
-document.getElementById('goToEncryptPageBtn').addEventListener('click', () => {
-    ipcRenderer.send('navigate-to-encrypt-page');
+// Navigate to encryption page
+safeAddListener('goToEncryptPageBtn', 'click', () => {
+  ipcRenderer.send('navigate-to-encrypt-page');
 });
 
-//navigate to files page
-document.getElementById('manageFilesBtn').addEventListener('click', () => {
-  ipcRenderer.send('navigate-to-files');  // custom IPC event
+// Navigate to file manager
+safeAddListener('manageFilesBtn', 'click', () => {
+  ipcRenderer.send('navigate-to-files');
 });
 
-//navigate to services page
-document.getElementById('connectionsBtn').addEventListener('click', () => {
-  ipcRenderer.send('navigate-to-services');  // custom IPC event
+// Navigate to connections page
+safeAddListener('connectionsBtn', 'click', () => {
+  ipcRenderer.send('navigate-to-services');
 });
-
-
 

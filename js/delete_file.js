@@ -1,3 +1,5 @@
+console.log(" delete_file.js loaded");
+
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('delete-btn')) {
     const fileId = e.target.getAttribute('data-id');

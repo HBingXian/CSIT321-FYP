@@ -28,18 +28,46 @@ document.getElementById('selectFileBtn').addEventListener('click', async () => {
 });
 
 // === Import key from JSON ===
-document.getElementById('importKeyBtn').addEventListener('click', async () => {
-  const keyInputEl = document.getElementById('encryptionKeyInput');
-  const res = await ipcRenderer.invoke('import-key-json');
-  if (res?.status === 'success' && res.key) {
-    keyInputEl.value = res.key;
-    alert('Key imported.');
-  } else if (res?.status === 'cancelled') {
-    // user cancelled file dialog — do nothing
-  } else {
-    alert(res?.message || 'Failed to import key from JSON.');
-  }
-});
+const keyInputEl   = document.getElementById('encryptionKeyInput');
+const importBtn    = document.getElementById('importKeyBtn');
+const importFileEl = document.getElementById('importKeyFile');
+
+if (importBtn && importFileEl) {
+  importBtn.addEventListener('click', () => {
+    importFileEl.value = '';    // reset so selecting same file twice still triggers change
+    importFileEl.click();       // opens native file picker (renderer-safe)
+  });
+
+  importFileEl.addEventListener('change', async (e) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const text = await file.text();        // read file content
+      const data = JSON.parse(text);
+
+      // Your generator writes { "encryptionKey": "<base64>" }
+      const key = data.encryptionKey || data.key || data.encryption_key;
+
+      if (!key || typeof key !== 'string') {
+        alert('No "encryptionKey" string found in JSON.');
+        return;
+      }
+
+      // quick sanity: base64
+      try { Buffer.from(key, 'base64'); } catch {
+        alert('Key in JSON is not valid Base64.');
+        return;
+      }
+
+      if (keyInputEl) keyInputEl.value = key;
+      alert('Key imported.');
+    } catch (err) {
+      console.error('Import key error:', err);
+      alert('Failed to import key from JSON.');
+    }
+  });
+}
 
 // === Handle back to dashboard ===
 window.addEventListener('DOMContentLoaded', () => {
