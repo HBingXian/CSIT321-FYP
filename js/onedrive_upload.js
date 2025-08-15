@@ -1,105 +1,67 @@
+// js/onedrive_upload.js
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const { setOneDriveToken, getOneDriveToken, deleteOneDriveToken } = require('./token_store');
 
-const TOKEN_PATH = path.join(__dirname, '../.onedrive_token.json');
+const creds = require('../credentials.json'); // must contain your MS app creds
+const { onedrive } = creds || {};
+if (!onedrive || !onedrive.client_id || !onedrive.client_secret || !onedrive.redirect_uri) {
+  throw new Error('credentials.json must have { onedrive: { client_id, client_secret, redirect_uri } }');
+}
+const { client_id, client_secret, redirect_uri } = onedrive;
 
-function clearToken() {
-  try { if (fs.existsSync(TOKEN_PATH)) fs.unlinkSync(TOKEN_PATH); } catch {}
+function withExpiry(token) {
+  const expires_at = Date.now() + ((token.expires_in || 3600) - 60) * 1000;
+  return { ...token, expires_at };
 }
 
-const CLIENT_ID = 'cca1ab0b-d9ac-49a7-888c-1ccb40568d6b';
-const CLIENT_SECRET = 'Zwl8Q~sefTJE3jQ50sAqBpFYMBg_cAcKRWn8PbmA';
-const REDIRECT_URI = 'http://localhost:3000/callback';
-const SCOPES = 'Files.ReadWrite.All offline_access User.Read';
-
-// Save token to disk
-function saveToken(token) {
-  fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
-}
-
-// Load token from disk
-function loadToken() {
-  if (!fs.existsSync(TOKEN_PATH)) return null;
-  return JSON.parse(fs.readFileSync(TOKEN_PATH));
-}
-
-// Exchange auth code for token (after user logs in)
-async function getAccessToken(authCode) {
-  const params = new URLSearchParams();
-  params.append('client_id', CLIENT_ID);
-  params.append('scope', SCOPES);
-  params.append('code', authCode);
-  params.append('redirect_uri', REDIRECT_URI);
-  params.append('grant_type', 'authorization_code');
-  params.append('client_secret', CLIENT_SECRET);
-
-  const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', params, {
+async function getAccessToken(authCode, userKey) {
+  if (!userKey) throw new Error('getAccessToken requires userKey');
+  const url = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+  const params = new URLSearchParams({
+    client_id, client_secret, redirect_uri,
+    code: authCode, grant_type: 'authorization_code'
+  });
+  const { data } = await axios.post(url, params.toString(), {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   });
-
-  saveToken(response.data);
-  return response.data.access_token;
+  const tok = withExpiry(data);
+  await setOneDriveToken(userKey, tok);
+  return tok.access_token;
 }
 
-// Refresh token
-async function refreshAccessToken(refreshToken) {
-  const params = new URLSearchParams();
-  params.append('client_id', CLIENT_ID);
-  params.append('scope', SCOPES);
-  params.append('refresh_token', refreshToken);
-  params.append('redirect_uri', REDIRECT_URI);
-  params.append('grant_type', 'refresh_token');
-  params.append('client_secret', CLIENT_SECRET);
+async function getValidAccessToken(userKey) {
+  if (!userKey) throw new Error('getValidAccessToken requires userKey');
+  let tok = await getOneDriveToken(userKey);
+  if (tok && tok.expires_at && tok.expires_at > Date.now()) return tok.access_token;
 
-  const res = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', params, {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-  });
-
-  saveToken(res.data);
-  return res.data.access_token;
-}
-
-// Get access token (valid or freshly refreshed)
-async function getValidAccessToken() {
-  const tokenData = loadToken();
-  if (!tokenData || !tokenData.refresh_token) return null;
-
-  try {
-    return await refreshAccessToken(tokenData.refresh_token);
-  } catch (err) {
-    console.error('Token refresh failed:', err?.response?.data || err.message);
-    clearToken();
-    return null;
+  if (tok && tok.refresh_token) {
+    const url = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+    const params = new URLSearchParams({
+      client_id, client_secret, redirect_uri,
+      refresh_token: tok.refresh_token, grant_type: 'refresh_token'
+    });
+    const { data } = await axios.post(url, params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    tok = withExpiry({ ...tok, ...data });
+    await setOneDriveToken(userKey, tok);
+    return tok.access_token;
   }
+  return null;
 }
 
-// Upload encrypted file
+async function clearOneDriveToken(userKey) {
+  await deleteOneDriveToken(userKey);
+}
+
 async function uploadFileToOneDrive(accessToken, filePath) {
   const fileName = path.basename(filePath);
-  const fileData = fs.readFileSync(filePath);
-
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Encrypted file not found: ${filePath}`);
-  }
-
-  const response = await axios.put(
-    `https://graph.microsoft.com/v1.0/me/drive/root:/${fileName}:/content`,
-    fileData,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/octet-stream',
-      }
-    }
-  );
-
-  return response.data;
+  const stream = fs.createReadStream(filePath);
+  const url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(fileName)}:/content`;
+  const { data } = await axios.put(url, stream, { headers: { Authorization: `Bearer ${accessToken}` } });
+  return data; // includes { id, name, ... }
 }
 
-module.exports = {
-  getAccessToken,
-  getValidAccessToken,
-  uploadFileToOneDrive
-};
-
+module.exports = { getAccessToken, getValidAccessToken, clearOneDriveToken, uploadFileToOneDrive };

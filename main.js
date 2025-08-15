@@ -7,8 +7,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const axios = require('axios');
 const { dialog } = require('electron');
-// === OneDrive Services page wiring ===
-const ONEDRIVE_TOKEN_PATH = path.join(__dirname, '.onedrive_token.json'); // token file used by js/onedrive_upload
+const ONEDRIVE_TOKEN_PATH = path.join(__dirname, '.onedrive_token.json');
 
 const { encryptFile } = require('./js/file_encrypt');
 const { decryptFile } = require('./js/file_decrypt');
@@ -16,20 +15,40 @@ const { uploadToDrive } = require('./js/drive_upload');
 
 const { google } = require('googleapis');
 
-//Google auth (keytar-based)
 const gAuth = require('./auth/google_drive_auth');
 
-//One drive auth
-const { getAccessToken, getValidAccessToken, uploadFileToOneDrive } = require('./js/onedrive_upload');
+ipcMain.handle('oauth:google', async () => {
+  try {
+    await gAuth.beginGoogleOAuth(currentUser);
+    return true;
+  } catch (e) {
+    console.error('oauth:google error:', e);
+    return false;
+  }
+});
+
+function suggestDecryptedName(name) {
+  const fallback = 'file_encrypted.dat';
+  let base = (name && typeof name === 'string') ? name : fallback;
+  if (base.toLowerCase().endsWith('_encrypted.dat')) {
+    base = base.slice(0, -'_encrypted.dat'.length); // strip the encryption suffix
+  }
+  const dot = base.lastIndexOf('.');
+  if (dot > 0) {
+    return `${base.slice(0, dot)}_decrypted${base.slice(dot)}`; // name_decrypted.ext
+  }
+  return `${base}_decrypted`; // no extension case
+}
+
+const { getAccessToken, getValidAccessToken, uploadFileToOneDrive, clearOneDriveToken } = require('./js/onedrive_upload');
 const { getAuthUrl } = require('./scripts/init_onedrive_token');
 const express = require('express');
 
 let mainWindow;
-let currentUser = null; // Track the currently logged-in user
-let currentEncryptionKey = null;//same 
-let pendingCloudDecrypt = null; // { provider, fileId, fileName }
+let currentUser = null;
+let currentEncryptionKey = null;
+let pendingCloudDecrypt = null;
 
-// Create main application window
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -50,17 +69,15 @@ function createWindow() {
   });
 }
 
-//app.whenReady().then(createWindow);
-//One drive express server
 function startAuthServer() {
   const ex = express();
-  const PORT = 3000; // keep OneDrive on 3000
+  const PORT = 3000;
 
   ex.get('/callback', async (req, res) => {
     const authCode = req.query.code;
     res.send(`<h3>Authorization successful! You can close this window.</h3>`);
     try {
-      await getAccessToken(authCode);
+      await getAccessToken(authCode, currentUser);
       if (mainWindow) mainWindow.webContents.send('onedrive-auth-success');
     } catch (err) {
       console.error('OAuth error:', err);
@@ -75,7 +92,6 @@ function startAuthServer() {
   server.on('error', (err) => {
     if (err && err.code === 'EADDRINUSE') {
       console.warn(`[OneDrive OAuth] Port ${PORT} already in use. Not starting a second server.`);
-      // do nothing: OneDrive can still work if an instance is already running
     } else {
       console.error('[OneDrive OAuth] Server error:', err);
     }
@@ -84,10 +100,9 @@ function startAuthServer() {
 
 app.whenReady().then(() => {
   createWindow();
-  startAuthServer(); // ← Add this
+  startAuthServer();
 });
 
-// MySQL connection
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -103,7 +118,6 @@ db.connect((err) => {
   console.log('Connected to MySQL');
 });
 
-// Log action to activity_logs table
 function logAction(username, action, description) {
   const sql = 'INSERT INTO activity_logs (username, action_type, description) VALUES (?, ?, ?)';
   db.query(sql, [username, action, description], (err) => {
@@ -111,7 +125,6 @@ function logAction(username, action, description) {
   });
 }
 
-// Handle login
 ipcMain.on('login-attempt', (event, { username, password }) => {
   const sql = 'SELECT * FROM users WHERE username = ?';
   db.query(sql, [username], (err, results) => {
@@ -138,9 +151,7 @@ ipcMain.on('login-attempt', (event, { username, password }) => {
       if (!isMatch) {
         event.reply('login-response', { success: false, error: 'Invalid password' });
       } else {
-
-        currentUser = user.username; //  Set the logged-in user
-
+        currentUser = user.username;
         event.reply('login-response', { success: true, user: user.username });
         mainWindow.loadFile('pages/dashboard.html');
       }
@@ -148,7 +159,6 @@ ipcMain.on('login-attempt', (event, { username, password }) => {
   });
 });
 
-// Handle logout
 ipcMain.on('logout-request', () => {
   currentUser = null;
   if (mainWindow) {
@@ -156,7 +166,6 @@ ipcMain.on('logout-request', () => {
   }
 });
 
-// Navigate to key generation
 ipcMain.on('navigate-to-gen-key', () => {
   if (mainWindow) {
     mainWindow.loadFile('pages/gen_key.html').then(() => {
@@ -165,15 +174,20 @@ ipcMain.on('navigate-to-gen-key', () => {
   }
 });
 
-//navigate to encrypt page
+ipcMain.on('navigate-to-rec-key', () => {
+  if (mainWindow) {
+    mainWindow.loadFile('pages/rec_key.html').then(() => {
+      mainWindow.focus();
+    });
+  }
+});
+
 ipcMain.on('navigate-to-encrypt-page', () => {
   if (mainWindow) {
     mainWindow.loadFile('pages/encrypt.html');
   }
 });
 
-
-// Back to dashboard
 ipcMain.on('home-request', () => {
   if (mainWindow) {
     mainWindow.loadFile('pages/dashboard.html').then(() => {
@@ -182,44 +196,13 @@ ipcMain.on('home-request', () => {
   }
 });
 
-//navigate to decrypt page
 ipcMain.on('navigate-to-decrypt-page', () => {
   if (mainWindow) {
     mainWindow.loadFile('pages/decrypt.html');
   }
 });
 
-// Handle Encrypt & Upload request
-/*
-ipcMain.on('request-encrypt-upload', async () => {
-    if (!currentUser) {
-        console.log('User not logged in');
-        return;
-    }
-
-    if (!currentEncryptionKey) {
-        console.log('Encryption key not ready. Generate your key first.');
-        return;
-    }
-
-    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
-    if (canceled || filePaths.length === 0) return;
-
-    const inputPath = filePaths[0];
-    const outputPath = inputPath + '_encrypted.dat';
-
-    // You need to have the encryptionKey available (ensure it's stored after key generation)
-    // Example assuming you store the key globally as currentEncryptionKey:
-    encryptFile(inputPath, outputPath, currentEncryptionKey);
-
-    // TODO: Add upload to cloud step here if needed  
-});
-*/
-
-// Navigate to Decrypt page with context
-// ==== Decrypt: context handoff (Files page -> Decrypt page) ====
 ipcMain.on('nav:decrypt-with-cloud', (event, ctx) => {
-  // ctx = { provider: 'google'|'onedrive', fileId, fileName }
   pendingCloudDecrypt = ctx;
   if (mainWindow) {
     const target = path.join(__dirname, 'pages', 'decrypt.html');
@@ -229,14 +212,12 @@ ipcMain.on('nav:decrypt-with-cloud', (event, ctx) => {
 
 ipcMain.handle('decrypt:get-context', async () => pendingCloudDecrypt);
 
-// ==== Decrypt: Cloud -> Local -> Decrypt (invoked from Decrypt page) ====
 ipcMain.handle('download-and-decrypt', async (_event, { provider, fileId, fileName, base64Key }) => {
   try {
-    // 1) Download encrypted file to temp
     const tmpEncrypted = path.join(app.getPath('temp'), `${fileName || 'downloaded_encrypted.dat'}`);
 
     if (provider === 'onedrive') {
-      const token = await getValidAccessToken();
+      const token = await getValidAccessToken(currentUser);
       if (!token) throw new Error('Not connected to OneDrive');
       const resp = await axios.get(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/content`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -244,7 +225,6 @@ ipcMain.handle('download-and-decrypt', async (_event, { provider, fileId, fileNa
       });
       fs.writeFileSync(tmpEncrypted, Buffer.from(resp.data));
     } else {
-      // Google Drive
       const auth = await gAuth.authorizeGoogleFor(currentUser);
       const drive = google.drive({ version: 'v3', auth });
       const dest = fs.createWriteStream(tmpEncrypted);
@@ -258,16 +238,15 @@ ipcMain.handle('download-and-decrypt', async (_event, { provider, fileId, fileNa
       });
     }
 
-    // 2) Ask where to save decrypted output
-    const suggested =
-      (fileName || 'file_encrypted.dat').replace(/_encrypted\.dat$/i, '') + '_decrypted';
+    //////////////////////////////////////////////////
+    const suggested = suggestDecryptedName(fileName);
     const { canceled, filePath } = await dialog.showSaveDialog({
-      title: 'Save Decrypted File As',
-      defaultPath: suggested
+    title: 'Save Decrypted File As',
+    defaultPath: suggested
     });
+
     if (canceled || !filePath) return { status: 'cancelled' };
 
-    // 3) Decrypt
     await decryptFile(tmpEncrypted, filePath, base64Key);
 
     return { status: 'ok', message: `Decrypted to ${filePath}` };
@@ -277,7 +256,6 @@ ipcMain.handle('download-and-decrypt', async (_event, { provider, fileId, fileNa
   }
 });
 
-// ==== Decrypt: Local-only fallback (used when Decrypt page wasn't given a cloud file) ====
 ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
   if (canceled || filePaths.length === 0) return;
@@ -286,7 +264,7 @@ ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
 
   const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog({
     title: 'Save Decrypted File As',
-    defaultPath: encryptedPath.replace('_encrypted.dat', '_decrypted.txt'),
+    defaultPath: suggestDecryptedName(path.basename(encryptedPath)),
     buttonLabel: 'Save Decrypted File'
   });
   if (saveCanceled || !savePath) return;
@@ -300,8 +278,6 @@ ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
   }
 });
 
-
-// Handle key generation
 ipcMain.on('generate-key', (event, passphrase) => {
   if (!currentUser) {
     event.reply('key-status', { message: 'No user logged in' });
@@ -365,52 +341,6 @@ ipcMain.on('generate-random-key', (event) => {
   logAction(currentUser, 'key_generation', 'Random encryption key was generated.');
 });
 
-/* ---------- old encryption code ---------- 
-ipcMain.on('encrypt-file-from-page', async (event, encryptionKey) => {
-  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
-  if (canceled || filePaths.length === 0) return;
-
-  const inputPath = filePaths[0];
-  const outputPath = inputPath + '_encrypted.dat';
-
-  try {
-    encryptFile(inputPath, outputPath, encryptionKey);
-    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
-
-    // Upload to Google Drive after encryption
-    console.log("Uploading to Google Drive:", outputPath); // for testing
-    uploadToDrive(outputPath);
-  } catch (err) {
-    console.error('Encryption or upload error:', err);
-    event.sender.send('encryption-done', 'Encryption failed.');
-  }
-});
-*/
-
-/*//new encryption code with description
-ipcMain.on('encrypt-file-from-page', async (event, data) => {
-  const { key: encryptionKey, description } = data;
-
-  console.log('ENCRYPTION KEY TYPE:', typeof encryptionKey, encryptionKey); // Debug
-
-  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'] });
-  if (canceled || filePaths.length === 0) return;
-
-  const inputPath = filePaths[0];
-  const outputPath = inputPath + '_encrypted.dat';
-
-  try {
-    encryptFile(inputPath, outputPath, encryptionKey); // Make sure this is using the correct var
-    event.sender.send('encryption-done', `File encrypted: ${outputPath}`);
-
-    // Upload to Google Drive with description
-    uploadToDrive(outputPath, description);
-  } catch (err) {
-    console.error('Encryption or upload error:', err);
-    event.sender.send('encryption-done', 'Encryption failed.');
-  }
-}); */  
-
 //New ipc call for new auth flow
 ipcMain.on('encrypt-file-from-page', async (event, data) => {
   const { key: encryptionKey, description, destination } = data;
@@ -431,7 +361,7 @@ ipcMain.on('encrypt-file-from-page', async (event, data) => {
       await uploadToDrive(outputPath, description, auth);
       event.sender.send('encryption-done', `File encrypted and uploaded to Google Drive.`);
     } else if (destination === 'onedrive') {
-      const accessToken = await getValidAccessToken();
+      const accessToken = await getValidAccessToken(currentUser);
       if (!accessToken) {
         const authUrl = getAuthUrl();
         require('electron').shell.openExternal(authUrl);
@@ -457,7 +387,6 @@ ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
 
     const encryptedPath = filePaths[0];
 
-    // Show save location dialog
     const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog({
         title: 'Save Decrypted File As',
         defaultPath: encryptedPath.replace('_encrypted.dat', '_decrypted.txt'),
@@ -474,12 +403,10 @@ ipcMain.on('decrypt-file-from-page', async (event, encryptionKey) => {
     }
 });
 
-// Navigate to files.html 
 ipcMain.on('navigate-to-files', () => {
-  mainWindow.loadFile('pages/files.html');  // or adjust path as needed
+  mainWindow.loadFile('pages/files.html');
 });
 
-//List / View files ggdrive
 ipcMain.on('request-google-drive-files', async (event, appUserKey) => {
   try {
     const auth = await gAuth.authorizeGoogleFor(appUserKey || currentUser);
@@ -498,18 +425,16 @@ ipcMain.on('request-google-drive-files', async (event, appUserKey) => {
     event.reply('response-google-drive-files', []);
   }
 });
-//List / View files onedrive
+
 ipcMain.on('request-onedrive-files', async (event) => {
   try {
-    const accessToken = await getValidAccessToken(); // from ./js/onedrive_upload
+    const accessToken = await getValidAccessToken(currentUser);
     if (!accessToken) return event.sender.send('response-onedrive-files', []);
 
-    // Root listing (change to your folder if needed)
     const resp = await axios.get('https://graph.microsoft.com/v1.0/me/drive/root/children?$top=200', {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
 
-    // Send raw items; renderer normalizes to table shape
     event.sender.send('response-onedrive-files', resp.data && resp.data.value || []);
   } catch (e) {
     console.error('OneDrive list error:', e?.response?.data || e.message);
@@ -517,7 +442,6 @@ ipcMain.on('request-onedrive-files', async (event) => {
   }
 });
 
-// Google Drive delete
 ipcMain.on('delete-google-drive-file', async (event, fileId) => {
   if (!fileId) return console.error('Missing fileId for Google delete');
   const auth = await gAuth.authorizeGoogleFor(currentUser);
@@ -526,51 +450,20 @@ ipcMain.on('delete-google-drive-file', async (event, fileId) => {
   event.sender.send('file-deleted', fileId);
 });
 
-// OneDrive delete
 ipcMain.on('delete-onedrive-file', async (event, fileId) => {
   if (!fileId) return console.error('Missing fileId for OneDrive delete');
-  const token = await getValidAccessToken();
+  const token = await getValidAccessToken(currentUser);
   await axios.delete(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   event.sender.send('file-deleted', fileId);
 });
 
-// Share files
-/*ipcMain.on('share-google-drive-file', async (event, { fileId, appUserKey }) => {
-  try {
-    const auth = await gAuth.authorizeGoogleFor(appUserKey || currentUser);
-    const drive = google.drive({ version: 'v3', auth });
-
-    await drive.permissions.create({
-      fileId,
-      requestBody: {
-        role: 'reader',
-        type: 'anyone'
-      }
-    });
-
-    const { data } = await drive.files.get({
-      fileId,
-      fields: 'webViewLink'
-    });
-
-    console.log(`File shared: ${fileId} → ${data.webViewLink}`);
-    event.sender.send('share-link-ready', { fileId, link: data.webViewLink });
-
-  } catch (err) {
-    console.error('Share error:', err.message);
-  }
-});    */
-
-// New ipc for google drive consent page.
-// Runs full Google OAuth for the current user and persists tokens via keytar
 async function runGoogleOAuthFor(appUserKey) {
   if (!appUserKey) throw new Error('No app user is logged in.');
 
   const oAuth2 = gAuth.newOAuthClient();
 
-  // Grab the localhost redirect from credentials.json
   const redirectUri =
     oAuth2.redirectUri || oAuth2.redirect_uris?.[0] || oAuth2.redirectUri_;
   if (!redirectUri || !redirectUri.startsWith('http://localhost:')) {
@@ -586,7 +479,6 @@ async function runGoogleOAuthFor(appUserKey) {
     scope: scopes,
   });
 
-  // Spin up a tiny local server to catch the OAuth redirect
   const code = await new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       const reqUrl = new URL(req.url, `http://localhost:${listenPort}`);
@@ -616,14 +508,12 @@ async function runGoogleOAuthFor(appUserKey) {
     server.on('error', reject);
   });
 
-  // Exchange code for tokens and save them per user
   const { tokens } = await oAuth2.getToken(code);
   oAuth2.setCredentials(tokens);
   await gAuth.saveGoogleTokens(oAuth2, appUserKey);
   return true;
 }
 
-// IPC: start OAuth for the current user (or explicit key)
 ipcMain.removeHandler('oauth:google');
 ipcMain.handle('oauth:google', async (_e, appUserKey) => {
   try {
@@ -640,26 +530,23 @@ ipcMain.removeHandler('cloud:get-status');
 ipcMain.handle('cloud:get-status', async (_e, appUserKey) => {
   const key = appUserKey || currentUser;
 
-  // Google (keep your existing logic)
   const googleConnected = key ? await gAuth.isGoogleConnected(key) : false;
 
-  // OneDrive: try a silent refresh; if that fails, fall back to token file presence
   let oneDriveConnected = false;
   try {
-    const token = await getValidAccessToken();
+    const token = await getValidAccessToken(key);
     oneDriveConnected = !!token;
   } catch {
-    oneDriveConnected = fs.existsSync(ONEDRIVE_TOKEN_PATH);
+    oneDriveConnected = false;
   }
 
   return {
     googleConnected,
     oneDriveConnected,
-    onedriveConnected: oneDriveConnected, // alias for renderer code using a different casing
+    onedriveConnected: oneDriveConnected,
     defaultProvider: ''
   };
 });
-
 
 ipcMain.removeHandler('cloud:disconnect-google');
 ipcMain.handle('cloud:disconnect-google', async (_e, appUserKey) => {
@@ -669,9 +556,8 @@ ipcMain.handle('cloud:disconnect-google', async (_e, appUserKey) => {
   return { ok: true };
 });
 
-//IPc block for one drive 
 ipcMain.handle('start-onedrive-upload', async (event) => {
-  let accessToken = await getValidAccessToken();
+  let accessToken = await getValidAccessToken(currentUser);
 
   if (!accessToken) {
     const authUrl = getAuthUrl();
@@ -695,16 +581,11 @@ ipcMain.handle('start-onedrive-upload', async (event) => {
   return { status: 'success', fileName: uploadResponse.name };
 });
 
-//Services page One Drive 
-// Start OneDrive OAuth (Connect)
 ipcMain.removeHandler('oauth:onedrive');
 ipcMain.handle('oauth:onedrive', async () => {
   try {
-    // already connected?
-    const token = await getValidAccessToken();
+    const token = await getValidAccessToken(currentUser);
     if (token) return true;
-
-    // open browser to start login
     const authUrl = getAuthUrl();
     await shell.openExternal(authUrl);
     return true;
@@ -714,11 +595,10 @@ ipcMain.handle('oauth:onedrive', async () => {
   }
 });
 
-// Disconnect OneDrive (delete token file)
 ipcMain.removeHandler('cloud:disconnect-onedrive');
 ipcMain.handle('cloud:disconnect-onedrive', async () => {
   try {
-    if (fs.existsSync(ONEDRIVE_TOKEN_PATH)) fs.unlinkSync(ONEDRIVE_TOKEN_PATH);
+    await clearOneDriveToken(currentUser);
     return { ok: true };
   } catch (e) {
     console.error('disconnect onedrive error:', e);
@@ -726,7 +606,6 @@ ipcMain.handle('cloud:disconnect-onedrive', async () => {
   }
 });
 
-// Navigate to services.html (Manage Connections)
 ipcMain.on('navigate-to-services', (event) => {
   console.log('🔁 IPC received: navigate-to-services');
 
@@ -746,7 +625,6 @@ ipcMain.on('navigate-to-services', (event) => {
   }
 });
 
-  // Close app
-  app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
-  });
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
